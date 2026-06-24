@@ -1,0 +1,1535 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>APM Engine</title>
+    
+    <link rel="manifest" href="./manifest.json">
+    
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="APM Engine">
+
+    <style>
+        /* --- iOS NATIVE DARK MODE CSS --- */
+        :root {
+            --bg-color: #000000;          /* True black for OLED battery saving */
+            --surface-color: #1C1C1E;     /* iOS dark gray card color */
+            --surface-highlight: #2C2C2E;
+            --text-primary: #FFFFFF;
+            --text-secondary: #8E8E93;
+            --accent-blue: #0A84FF;
+            --accent-red: #FF453A;
+            --accent-green: #32D74B;
+            --border-color: #38383A;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            -webkit-tap-highlight-color: transparent; /* Removes blue tap highlight on iOS */
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            overflow: hidden; /* Prevents whole-page bounce */
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* --- Header Styling --- */
+        .top-bar {
+            background-color: var(--surface-color);
+            padding: 55px 20px 15px 20px; /* Accounts for iPhone notch/Dynamic Island */
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            z-index: 10;
+        }
+
+        .header-text {
+            display: flex;
+            flex-direction: column;
+        }
+
+        #view-title {
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: 0.3px;
+        }
+
+        .target-placeholder {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-top: 4px;
+            font-weight: 500;
+        }
+
+        /* --- Scrollable Content Area --- */
+        .content-container {
+            flex: 1;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch; /* Smooth iOS scrolling */
+            padding: 20px;
+            padding-bottom: 110px; /* Space for bottom nav */
+        }
+
+        /* --- Bottom Navigation Bar --- */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            height: 90px;
+            background-color: rgba(28, 28, 30, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-around;
+            padding-bottom: 30px; /* iOS Home indicator space */
+            z-index: 1000;
+        }
+
+        .nav-btn {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 11px;
+            font-weight: 500;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 20%;
+            padding-top: 12px;
+            cursor: pointer;
+        }
+
+        .nav-btn.active {
+            color: var(--accent-blue);
+        }
+
+        /* --- Reusable UI Components --- */
+        .card {
+            background-color: var(--surface-color);
+            border-radius: 14px;
+            padding: 18px;
+            margin-bottom: 16px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 16px;
+        }
+
+        .input-group label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+        }
+
+        .input-group input, .input-group select {
+            background-color: var(--bg-color);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 14px;
+            border-radius: 10px;
+            font-size: 16px; /* EXACTLY 16px prevents iOS Safari from auto-zooming on focus */
+            outline: none;
+            appearance: none; /* Removes default iOS styling on select boxes */
+        }
+
+        .input-group input:focus, .input-group select:focus {
+            border-color: var(--accent-blue);
+        }
+
+        .btn-primary {
+            background-color: var(--accent-blue);
+            color: #FFF;
+            border: none;
+            padding: 16px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            width: 100%;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: opacity 0.2s ease;
+        }
+
+        .btn-primary:active {
+            opacity: 0.7;
+        }
+
+        .btn-danger {
+            background-color: var(--bg-color);
+            color: var(--accent-red);
+            border: 1px solid var(--accent-red);
+        }
+
+        /* Full Screen Overlay for Setup & Transcription Mode */
+        .fullscreen-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: var(--bg-color);
+            z-index: 2000;
+            overflow-y: auto;
+            padding: 20px;
+            padding-top: 60px;
+        }
+
+        /* Utility Classes */
+        .hidden {
+            display: none !important;
+        }
+        
+        .flex-row {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .flex-row > .input-group {
+            flex: 1;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="setup-overlay" class="fullscreen-overlay hidden">
+        <h1 style="font-size: 32px; margin-bottom: 5px;">New Contract</h1>
+        <p style="color: var(--text-secondary); margin-bottom: 30px;">Initialize your offline database.</p>
+
+        <div class="card">
+            <div class="flex-row">
+                <div class="input-group">
+                    <label>Ship Initials</label>
+                    <input type="text" id="setup-ship-code" placeholder="e.g. SN" maxlength="2" style="text-transform: uppercase;">
+                </div>
+                <div class="input-group">
+                    <label>Target GCD ($)</label>
+                    <input type="number" id="setup-gcd" placeholder="3.50" step="0.01">
+                </div>
+            </div>
+
+            <div class="input-group">
+                <label>Sign-On Date</label>
+                <input type="date" id="setup-start-date">
+            </div>
+
+            <div class="input-group">
+                <label>Sign-Off Date</label>
+                <input type="date" id="setup-end-date">
+            </div>
+
+            <button id="btn-init-contract" class="btn-primary">Initialize Database</button>
+        </div>
+    </div>
+
+    <div id="transcription-overlay" class="fullscreen-overlay hidden" style="background-color: #000; padding: 0;">
+        <div id="transcription-content" style="height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+            <p>Generating Output...</p>
+        </div>
+        <button id="btn-exit-transcription" style="position: fixed; top: 20px; right: 20px; background: #333; color: #FFF; border: none; padding: 10px 20px; border-radius: 8px;">Exit</button>
+    </div>
+
+    <header class="top-bar">
+        <div class="header-text">
+            <h1 id="view-title">Dashboard</h1>
+            <div class="target-placeholder" id="header-target-info">GCD: $--- | Target: $---</div>
+        </div>
+        <div id="cruise-id-badge" style="background: var(--accent-blue); color: #FFF; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: bold;">
+            NO CYCLE
+        </div>
+    </header>
+
+    <main class="content-container" id="main-content">
+
+        <div id="dashboard-view" class="view-section">
+            <div class="card" style="background: linear-gradient(135deg, #1C1C1E, #2C2C2E);">
+                <h3 style="margin-bottom: 15px; font-size: 16px;">Daily Operations</h3>
+                <div id="task-list-container">
+                    <p style="color: var(--text-secondary); font-size: 14px; text-align: center; padding: 20px 0;">No active cycle. Start a cruise to generate tasks.</p>
+                </div>
+            </div>
+
+            <button id="btn-new-cruise" class="btn-primary" style="margin-bottom: 15px;">+ Start New Cruise Cycle</button>
+            <button id="btn-floor-check" class="btn-primary" style="background-color: #333; color: #FFF;">Run Floor Check (Traffic)</button>
+        </div>
+
+        <div id="logistics-view" class="view-section hidden">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h3 style="font-size: 18px;">The Crunch Walk</h3>
+                <button id="btn-generate-order" style="background: none; border: none; color: var(--accent-blue); font-weight: 600;">Corp Order</button>
+            </div>
+            <div id="inventory-list-container">
+                <p style="color: var(--text-secondary); font-size: 14px;">Inventory base not configured.</p>
+            </div>
+        </div>
+
+        <div id="schedule-view" class="view-section hidden">
+            <div class="card flex-row" style="padding: 10px;">
+                <button class="btn-primary" style="margin-top: 0; padding: 10px; font-size: 14px;">Casual</button>
+                <button class="btn-primary" style="margin-top: 0; padding: 10px; font-size: 14px; background-color: #333;">Elegant</button>
+                <button class="btn-primary" style="margin-top: 0; padding: 10px; font-size: 14px; background-color: #333;">Debark</button>
+            </div>
+            <div id="break-timeline-container">
+                <p style="color: var(--text-secondary); font-size: 14px; text-align: center; margin-top: 30px;">Select night type to generate timeline.</p>
+            </div>
+        </div>
+
+        <div id="endofday-view" class="view-section hidden">
+            <div class="card" style="display: flex; justify-content: space-between; align-items: center; padding: 15px;">
+                <span style="font-weight: bold; font-size: 18px;">Total Rolls</span>
+                <span id="eod-grand-total" style="color: var(--accent-green); font-size: 20px; font-weight: bold;">0</span>
+            </div>
+            <div id="eod-photographer-list">
+                </div>
+            <button id="btn-generate-reports" class="btn-primary" style="margin-top: 20px; background-color: var(--accent-green); color: #000;">Generate Lab Report</button>
+            <button id="btn-close-cruise" class="btn-primary btn-danger" style="margin-top: 10px;">Submit Final Revenue & Close Cruise</button>
+        </div>
+
+        <div id="roster-view" class="view-section hidden">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h3 style="font-size: 18px;">Active Roster</h3>
+                <button id="btn-add-photographer" style="background: none; border: none; color: var(--accent-blue); font-weight: 600;">+ Add</button>
+            </div>
+            <div id="roster-list-container">
+                <p style="color: var(--text-secondary); font-size: 14px;">No team members added to this contract.</p>
+            </div>
+            
+            <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 30px 0;">
+            
+            <h3 style="font-size: 18px; margin-bottom: 15px;">System Data</h3>
+            <button id="btn-force-update" class="btn-primary" style="background-color: var(--border-color); color: #FFF; margin-bottom: 10px;">🔄 Force Update & Sync Code</button>
+            <button id="btn-export-json" class="btn-primary" style="background-color: var(--border-color); color: #FFF; margin-bottom: 10px;">📥 Export Career Data (JSON)</button>
+        </div>
+
+    </main>
+
+    <nav class="bottom-nav">
+        <button class="nav-btn active" data-target="dashboard">
+            <span style="font-size: 20px; margin-bottom: 4px;">⌘</span>
+            Dash
+        </button>
+        <button class="nav-btn" data-target="logistics">
+            <span style="font-size: 20px; margin-bottom: 4px;">📦</span>
+            Inv
+        </button>
+        <button class="nav-btn" data-target="schedule">
+            <span style="font-size: 20px; margin-bottom: 4px;">⏱</span>
+            Breaks
+        </button>
+        <button class="nav-btn" data-target="endofday">
+            <span style="font-size: 20px; margin-bottom: 4px;">📝</span>
+            EOD
+        </button>
+        <button class="nav-btn" data-target="roster">
+            <span style="font-size: 20px; margin-bottom: 4px;">👥</span>
+            Team
+        </button>
+    </nav>
+
+    <script>
+	
+        // ==========================================
+        // 1. SERVICE WORKER & CACHE MANAGEMENT
+        // ==========================================
+        
+        // Register the Service Worker for Offline Functionality
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(reg => console.log('Service Worker Registered Successfully', reg))
+                    .catch(err => console.error('Service Worker Registration Failed', err));
+            });
+        }
+
+        // The "Hard Refresh" Function (Bypasses Cache for updates)
+        document.getElementById('btn-force-update').addEventListener('click', async () => {
+            if (!confirm("This will fetch the latest app code from the server. Your offline data will NOT be deleted. Proceed?")) return;
+            
+            if ('serviceWorker' in navigator) {
+                const registrations = await navigator.serviceWorker.getRegistrations();
+                for (let registration of registrations) {
+                    await registration.unregister();
+                }
+            }
+            // Clear all caches
+            if ('caches' in window) {
+                const cacheNames = await caches.keys();
+                await Promise.all(cacheNames.map(name => caches.delete(name)));
+            }
+            // Force reload from server
+            window.location.reload(true);
+        });
+
+
+        // ==========================================
+        // 2. THE INDEXED-DB ENGINE (PROMISE WRAPPER)
+        // ==========================================
+        
+        const DB_NAME = 'APMEngineDB';
+        const DB_VERSION = 1;
+        let db;
+
+        // Opens the database and builds the tables if they don't exist
+        function initDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(DB_NAME, DB_VERSION);
+
+                request.onupgradeneeded = (event) => {
+                    const database = event.target.result;
+                    
+                    // Table: Contracts (The overarching envelope)
+                    if (!database.objectStoreNames.contains('contracts')) {
+                        database.createObjectStore('contracts', { keyPath: 'id' });
+                    }
+                    
+                    // Table: Cycles (The individual cruises, e.g., SN05080326)
+                    if (!database.objectStoreNames.contains('cycles')) {
+                        const cycleStore = database.createObjectStore('cycles', { keyPath: 'id' });
+                        cycleStore.createIndex('contractId', 'contractId', { unique: false });
+                        cycleStore.createIndex('status', 'status', { unique: false }); // 'active' or 'closed'
+                    }
+
+                    // Table: Roster (Team members linked to a contract)
+                    if (!database.objectStoreNames.contains('roster')) {
+                        const rosterStore = database.createObjectStore('roster', { keyPath: 'id' });
+                        rosterStore.createIndex('contractId', 'contractId', { unique: false });
+                        rosterStore.createIndex('scheduleNumber', 'scheduleNumber', { unique: false });
+                    }
+
+                    // Table: Tasks (Dynamic checklist items)
+                    if (!database.objectStoreNames.contains('tasks')) {
+                        const taskStore = database.createObjectStore('tasks', { keyPath: 'id' });
+                        taskStore.createIndex('cycleId', 'cycleId', { unique: false });
+                        taskStore.createIndex('status', 'status', { unique: false });
+                    }
+
+                    // Table: RollCounts (Nightly revenue/photo counts)
+                    if (!database.objectStoreNames.contains('rollCounts')) {
+                        const rollStore = database.createObjectStore('rollCounts', { keyPath: 'id', autoIncrement: true });
+                        rollStore.createIndex('cycleId', 'cycleId', { unique: false });
+                        rollStore.createIndex('photographerId', 'photographerId', { unique: false });
+                        rollStore.createIndex('type', 'type', { unique: false }); // 'mid-shift' or 'final'
+                    }
+                    
+                    console.log("Database Upgraded & Tables Created.");
+                };
+
+                request.onsuccess = (event) => {
+                    db = event.target.result;
+                    resolve(db);
+                };
+
+                request.onerror = (event) => {
+                    console.error("Database error: ", event.target.errorCode);
+                    reject(event.target.error);
+                };
+            });
+        }
+
+        // Helper: Write data to a specific table
+        function writeData(storeName, data) {
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction([storeName], 'readwrite');
+                const store = transaction.objectStore(storeName);
+                const request = store.put(data); // 'put' updates if exists, creates if new
+                
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => reject(request.error);
+            });
+        }
+
+        // Helper: Get all data from a specific table
+        function getAllData(storeName) {
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction([storeName], 'readonly');
+                const store = transaction.objectStore(storeName);
+                const request = store.getAll();
+                
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => reject(request.error);
+            });
+        }
+
+        // Helper: Query data using an Index (e.g., get all roster members for Contract X)
+        function queryByIndex(storeName, indexName, queryValue) {
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction([storeName], 'readonly');
+                const store = transaction.objectStore(storeName);
+                const index = store.index(indexName);
+                const request = index.getAll(queryValue);
+                
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => reject(request.error);
+            });
+        }
+
+
+        // ==========================================
+        // 3. GLOBAL APP STATE & INITIALIZATION
+        // ==========================================
+        
+        let currentContract = null; // Holds the active contract object
+        let currentCycle = null;    // Holds the active cruise cycle object
+
+        // Boot up the app
+        async function initApp() {
+            try {
+                await initDB();
+                await checkActiveContract();
+            } catch (error) {
+                console.error("Initialization Failed:", error);
+                alert("Critical Error loading the offline database.");
+            }
+        }
+
+        // Check if there is a contract currently open/active
+        async function checkActiveContract() {
+            const allContracts = await getAllData('contracts');
+            const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+            
+            // Look for a contract where today falls between start and end dates
+            currentContract = allContracts.find(c => today >= c.startDate && today <= c.endDate);
+
+            if (!currentContract) {
+                // No active contract found. App goes into Setup/Dormant mode.
+                document.getElementById('setup-overlay').classList.remove('hidden');
+            } else {
+                // Active contract found. Populate the UI header.
+                document.getElementById('setup-overlay').classList.add('hidden');
+                document.getElementById('header-target-info').textContent = 
+                    `GCD: $${currentContract.targetGCD.toFixed(2)} | Ship: ${currentContract.shipCode}`;
+                
+                // Now check if a Cruise Cycle is currently active within this contract
+                await checkActiveCycle();
+            }
+        }
+
+        // Check if there is a cruise currently active (ignoring midnights)
+        async function checkActiveCycle() {
+            if (!currentContract) return;
+
+            // Query cycles belonging to this specific contract
+            const contractCycles = await queryByIndex('cycles', 'contractId', currentContract.id);
+            
+            // Find the one that hasn't been closed out yet
+            currentCycle = contractCycles.find(cycle => cycle.status === 'active');
+
+            if (currentCycle) {
+                const badge = document.getElementById('cruise-id-badge');
+                badge.textContent = currentCycle.id;
+                badge.style.backgroundColor = 'var(--accent-green)';
+                badge.style.color = '#000';
+            } else {
+                const badge = document.getElementById('cruise-id-badge');
+                badge.textContent = "NO CYCLE";
+                badge.style.backgroundColor = 'var(--border-color)';
+                badge.style.color = '#FFF';
+            }
+        }
+
+        // Start the engine
+        window.addEventListener('DOMContentLoaded', initApp);
+
+        // ==========================================
+        // 4. THE UI ROUTER (BOTTOM NAVIGATION)
+        // ==========================================
+        
+        const navButtons = document.querySelectorAll('.nav-btn');
+        const viewSections = document.querySelectorAll('.view-section');
+        const viewTitle = document.getElementById('view-title');
+
+        navButtons.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                // 1. Update active button styling
+                navButtons.forEach(b => b.classList.remove('active'));
+                const clickedBtn = e.currentTarget;
+                clickedBtn.classList.add('active');
+
+                // 2. Hide all views, then show the target view
+                const targetViewId = clickedBtn.getAttribute('data-target') + '-view';
+                viewSections.forEach(section => section.classList.add('hidden'));
+                document.getElementById(targetViewId).classList.remove('hidden');
+
+                // 3. Update the Top Bar Title
+                const rawTarget = clickedBtn.getAttribute('data-target');
+                if (rawTarget === 'endofday') {
+                    viewTitle.textContent = 'End of Day';
+                } else if (rawTarget === 'logistics') {
+                    viewTitle.textContent = 'Logistics';
+                } else if (rawTarget === 'schedule') {
+                    viewTitle.textContent = 'Break Schedule';
+                } else if (rawTarget === 'roster') {
+                    viewTitle.textContent = 'Team Roster';
+                } else {
+                    viewTitle.textContent = 'Dashboard';
+                }
+            });
+        });
+
+
+        // ==========================================
+        // 5. CONTRACT SETUP LOGIC (DAY 1)
+        // ==========================================
+        
+        document.getElementById('btn-init-contract').addEventListener('click', async () => {
+            // Grab values from the setup UI
+            const shipCodeInput = document.getElementById('setup-ship-code').value.trim().toUpperCase();
+            const gcdInput = parseFloat(document.getElementById('setup-gcd').value);
+            const startDateInput = document.getElementById('setup-start-date').value;
+            const endDateInput = document.getElementById('setup-end-date').value;
+
+            // Strict Validation: Don't let bad data poison the database
+            if (!shipCodeInput || shipCodeInput.length !== 2) {
+                alert("Please enter exactly two letters for the Ship Initials (e.g., SN).");
+                return;
+            }
+            if (isNaN(gcdInput) || gcdInput <= 0) {
+                alert("Please enter a valid target GCD.");
+                return;
+            }
+            if (!startDateInput || !endDateInput || startDateInput >= endDateInput) {
+                alert("Please ensure dates are selected and the Start Date is before the End Date.");
+                return;
+            }
+
+            // Construct the Contract Envelope Object
+            const newContract = {
+                id: crypto.randomUUID(), // Generates a unique secure string
+                shipCode: shipCodeInput,
+                targetGCD: gcdInput,
+                startDate: startDateInput,
+                endDate: endDateInput,
+                createdAt: new Date().toISOString()
+            };
+
+            try {
+                // Save to IndexedDB
+                await writeData('contracts', newContract);
+                
+                // Update global state
+                currentContract = newContract;
+                
+                // Update UI and unlock the app
+                document.getElementById('header-target-info').textContent = 
+                    `GCD: $${currentContract.targetGCD.toFixed(2)} | Ship: ${currentContract.shipCode}`;
+                
+                document.getElementById('setup-overlay').classList.add('hidden');
+                console.log("New Contract Envelope Sealed:", currentContract);
+                
+            } catch (error) {
+                console.error("Failed to save contract:", error);
+                alert("Error saving contract to database.");
+            }
+        });
+
+
+        // ==========================================
+        // 6. CRUISE CYCLE ENGINE (The ID Generator)
+        // ==========================================
+        
+        document.getElementById('btn-new-cruise').addEventListener('click', async () => {
+            if (!currentContract) {
+                alert("System Error: No active contract envelope found.");
+                return;
+            }
+            if (currentCycle) {
+                alert("You must close the current cruise cycle before starting a new one.");
+                return;
+            }
+
+            // 1. Get duration from user (e.g., "5")
+            const durationInput = prompt("How many days is this cruise itinerary?", "5");
+            if (!durationInput || isNaN(durationInput)) return;
+            
+            const durationFormatted = String(durationInput).padStart(2, '0'); // Turns "5" into "05"
+
+            // 2. Format today's date to MMDDYY
+            const today = new Date();
+            const mm = String(today.getMonth() + 1).padStart(2, '0');
+            const dd = String(today.getDate()).padStart(2, '0');
+            const yy = String(today.getFullYear()).slice(-2);
+            const dateFormatted = `${mm}${dd}${yy}`;
+
+            // 3. Assemble the perfectly formatted ID (e.g., SN05080326)
+            const generatedCruiseID = `${currentContract.shipCode}${durationFormatted}${dateFormatted}`;
+
+            // 4. Construct the Cycle Object
+            const newCycle = {
+                id: generatedCruiseID,
+                contractId: currentContract.id,
+                status: 'active',
+                durationDays: parseInt(durationInput),
+                startDate: today.toISOString(),
+                // Target is calculated based on future guest count inputs
+                totalRevenue: 0 
+            };
+
+            try {
+                // Save to IndexedDB
+                await writeData('cycles', newCycle);
+                
+                // Update global state
+                currentCycle = newCycle;
+                
+                // Update the UI Badge
+                const badge = document.getElementById('cruise-id-badge');
+                badge.textContent = currentCycle.id;
+                badge.style.backgroundColor = 'var(--accent-green)';
+                badge.style.color = '#000';
+                
+                alert(`Cruise Cycle ${currentCycle.id} is now active and recording.`);
+                
+                // Optional: We can call a function here later to auto-generate today's tasks
+                // generateDailyTasks();
+                
+            } catch (error) {
+                console.error("Failed to start cruise cycle:", error);
+                alert("Error starting new cruise cycle.");
+            }
+        });
+        // ==========================================
+        // 7. TEAM ROSTER & PROFILE MANAGEMENT
+        // ==========================================
+
+        // Render the Roster UI
+        async function renderRoster() {
+            const container = document.getElementById('roster-list-container');
+            
+            if (!currentContract) {
+                container.innerHTML = `<p style="color: var(--text-secondary); font-size: 14px;">No active contract envelope.</p>`;
+                return;
+            }
+
+            try {
+                // Fetch all team members for this specific 6-month contract
+                const team = await queryByIndex('roster', 'contractId', currentContract.id);
+                
+                if (team.length === 0) {
+                    container.innerHTML = `<p style="color: var(--text-secondary); font-size: 14px;">No team members added to this contract.</p>`;
+                    return;
+                }
+
+                // Sort by Schedule Number mathematically (1, 2, 3...)
+                team.sort((a, b) => a.scheduleNumber - b.scheduleNumber);
+
+                // Build the UI Cards
+                container.innerHTML = '';
+                team.forEach(member => {
+                    // Count incidents to show a warning badge if needed
+                    const incidentCount = member.incidents ? member.incidents.length : 0;
+                    const badgeHtml = incidentCount > 0 
+                        ? `<span style="background: var(--accent-red); color: #FFF; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; margin-left: 8px;">${incidentCount} Flags</span>`
+                        : '';
+
+                    const card = document.createElement('div');
+                    card.className = 'card';
+                    card.style.padding = '12px 15px';
+                    card.innerHTML = `
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                            <div style="display: flex; align-items: center;">
+                                <div style="background: #333; color: #FFF; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 12px; margin-right: 10px;">
+                                    ${member.scheduleNumber}
+                                </div>
+                                <div>
+                                    <h4 style="font-size: 16px; margin: 0;">${member.name} ${badgeHtml}</h4>
+                                    <span style="font-size: 12px; color: var(--text-secondary);">${member.role}</span>
+                                </div>
+                            </div>
+                            <button class="btn-log-incident" data-id="${member.id}" style="background: none; border: 1px solid var(--border-color); color: var(--text-primary); padding: 6px 10px; border-radius: 6px; font-size: 11px; cursor: pointer;">
+                                ⚠️ Log
+                            </button>
+                        </div>
+                    `;
+                    container.appendChild(card);
+                });
+
+                // Attach event listeners to the new "Log" buttons
+                document.querySelectorAll('.btn-log-incident').forEach(btn => {
+                    btn.addEventListener('click', (e) => logIncident(e.currentTarget.getAttribute('data-id')));
+                });
+
+            } catch (error) {
+                console.error("Failed to render roster:", error);
+                container.innerHTML = `<p style="color: var(--accent-red); font-size: 14px;">Error loading roster data.</p>`;
+            }
+        }
+
+        // Add a New Photographer to the Contract
+        document.getElementById('btn-add-photographer').addEventListener('click', async () => {
+            if (!currentContract) {
+                alert("You must initialize a contract before adding team members.");
+                return;
+            }
+
+            // Using sequential native prompts for MVP speed (we can build a UI modal for this in Phase 2)
+            const name = prompt("Enter Photographer's Name:");
+            if (!name) return;
+
+            const schedNumStr = prompt(`Enter Schedule Number for ${name} (e.g., 1, 2, 3):`);
+            if (!schedNumStr || isNaN(schedNumStr)) {
+                alert("Schedule number must be a valid number.");
+                return;
+            }
+
+            const role = prompt(`Enter Primary Role for ${name} (e.g., Portrait, Dining, Gallery):`, "Portrait");
+            if (!role) return;
+
+            const newMember = {
+                id: crypto.randomUUID(),
+                contractId: currentContract.id,
+                name: name.trim(),
+                scheduleNumber: parseInt(schedNumStr),
+                role: role.trim(),
+                incidents: [], // Array to hold future discipline logs
+                addedAt: new Date().toISOString()
+            };
+
+            try {
+                await writeData('roster', newMember);
+                console.log("Team member added:", newMember);
+                renderRoster(); // Instantly refresh the UI
+            } catch (error) {
+                console.error("Failed to add photographer:", error);
+                alert("Error saving team member to database.");
+            }
+        });
+
+        // The Incident Logger Logic
+        async function logIncident(photographerId) {
+            try {
+                // 1. Fetch the specific photographer's record
+                const transaction = db.transaction(['roster'], 'readonly');
+                const store = transaction.objectStore('roster');
+                const request = store.get(photographerId);
+
+                request.onsuccess = async () => {
+                    const member = request.result;
+                    if (!member) return;
+
+                    // 2. Prompt the APM for the infraction details
+                    const incidentNote = prompt(`Log an infraction or note for ${member.name}:\n(e.g., "15 mins late to gangway", "Missing nametag")`);
+                    
+                    if (!incidentNote || incidentNote.trim() === '') return;
+
+                    // 3. Create the timestamped log
+                    const logEntry = {
+                        date: new Date().toISOString(),
+                        note: incidentNote.trim()
+                    };
+
+                    // 4. Append to their profile and overwrite in DB
+                    if (!member.incidents) member.incidents = []; // Safety check
+                    member.incidents.push(logEntry);
+
+                    await writeData('roster', member);
+                    console.log(`Incident logged for ${member.name}:`, logEntry);
+                    
+                    // 5. Refresh UI to show the updated flag count
+                    renderRoster();
+                };
+            } catch (error) {
+                console.error("Failed to log incident:", error);
+                alert("Error saving incident log.");
+            }
+        }
+
+        // Add an event listener to the Team Navigation button to ensure it renders fresh data when clicked
+        document.querySelector('.nav-btn[data-target="roster"]').addEventListener('click', renderRoster);
+
+        // ==========================================
+        // 8. END OF DAY (EOD) DATA INGESTION
+        // ==========================================
+
+        // Render the EOD Input List
+        async function renderEOD() {
+            const container = document.getElementById('eod-photographer-list');
+            
+            if (!currentCycle) {
+                container.innerHTML = `<p style="color: var(--text-secondary); text-align: center; padding: 20px;">No active cruise cycle. Start a cruise to log daily rolls.</p>`;
+                document.getElementById('btn-generate-reports').style.display = 'none';
+                return;
+            }
+
+            document.getElementById('btn-generate-reports').style.display = 'block';
+
+            try {
+                // Fetch the active roster
+                const team = await queryByIndex('roster', 'contractId', currentContract.id);
+                team.sort((a, b) => a.scheduleNumber - b.scheduleNumber);
+
+                container.innerHTML = '';
+                
+                // Build the data-entry rows for each photographer
+                team.forEach(member => {
+                    const card = document.createElement('div');
+                    card.className = 'card eod-entry-card';
+                    card.setAttribute('data-id', member.id);
+                    card.setAttribute('data-name', member.name);
+                    card.setAttribute('data-sched', member.scheduleNumber);
+                    
+                    card.innerHTML = `
+                        <div style="font-weight: bold; font-size: 16px; margin-bottom: 12px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
+                            ${member.scheduleNumber}. ${member.name} <span style="font-size: 12px; color: var(--text-secondary); font-weight: normal;">(${member.role})</span>
+                        </div>
+                        <div class="flex-row">
+                            <div class="input-group" style="margin-bottom: 0;">
+                                <label style="font-size: 10px;">Portrait</label>
+                                <input type="number" class="eod-input eod-portrait" inputmode="numeric" pattern="[0-9]*" placeholder="0">
+                            </div>
+                            <div class="input-group" style="margin-bottom: 0;">
+                                <label style="font-size: 10px;">Dining</label>
+                                <input type="number" class="eod-input eod-dining" inputmode="numeric" pattern="[0-9]*" placeholder="0">
+                            </div>
+                            <div class="input-group" style="margin-bottom: 0;">
+                                <label style="font-size: 10px;">Other/Rep</label>
+                                <input type="number" class="eod-input eod-other" inputmode="numeric" pattern="[0-9]*" placeholder="0">
+                            </div>
+                        </div>
+                    `;
+                    container.appendChild(card);
+                });
+
+                // Add real-time grand total calculator listener
+                document.querySelectorAll('.eod-input').forEach(input => {
+                    input.addEventListener('input', calculateEODTotal);
+                });
+
+            } catch (error) {
+                console.error("Failed to render EOD view:", error);
+                container.innerHTML = `<p style="color: var(--accent-red);">Error loading EOD data.</p>`;
+            }
+        }
+
+        function calculateEODTotal() {
+            let total = 0;
+            document.querySelectorAll('.eod-input').forEach(input => {
+                const val = parseInt(input.value);
+                if (!isNaN(val)) total += val;
+            });
+            document.getElementById('eod-grand-total').textContent = total;
+        }
+
+        // Attach EOD render to the navigation button
+        document.querySelector('.nav-btn[data-target="endofday"]').addEventListener('click', renderEOD);
+
+
+        // ==========================================
+        // 9. TRANSCRIPTION MODE (CORPORATE OUTPUT)
+        // ==========================================
+        
+        let currentTranscriptionData = [];
+        let focusModeIndex = 0;
+        let isFocusMode = false;
+
+        document.getElementById('btn-generate-reports').addEventListener('click', async () => {
+            // 1. Harvest all data from the UI
+            const entries = [];
+            document.querySelectorAll('.eod-entry-card').forEach(card => {
+                const portrait = parseInt(card.querySelector('.eod-portrait').value) || 0;
+                const dining = parseInt(card.querySelector('.eod-dining').value) || 0;
+                const other = parseInt(card.querySelector('.eod-other').value) || 0;
+                
+                // Only save if they actually shot something, or if you want to force zeros, keep it.
+                entries.push({
+                    photographerId: card.getAttribute('data-id'),
+                    name: card.getAttribute('data-name'),
+                    scheduleNumber: card.getAttribute('data-sched'),
+                    portrait: portrait,
+                    dining: dining,
+                    other: other,
+                    total: portrait + dining + other
+                });
+            });
+
+            // 2. Save Tonight's Data to IndexedDB
+            const tonightData = {
+                id: crypto.randomUUID(),
+                cycleId: currentCycle.id,
+                date: new Date().toISOString(),
+                type: 'nightly-rolls',
+                records: entries
+            };
+
+            try {
+                await writeData('rollCounts', tonightData);
+                console.log("Nightly Roll Data Saved:", tonightData);
+                
+                // 3. Launch Transcription Overlay
+                currentTranscriptionData = entries;
+                isFocusMode = false; // Default to Grid View
+                renderTranscriptionView();
+                document.getElementById('transcription-overlay').classList.remove('hidden');
+
+            } catch (error) {
+                console.error("Failed to save EOD data:", error);
+                alert("Database error saving roll counts.");
+            }
+        });
+
+        function renderTranscriptionView() {
+            const content = document.getElementById('transcription-content');
+            
+            if (!isFocusMode) {
+                // --- MASTER GRID VIEW ---
+                let html = `
+                    <div style="width: 100%; display: flex; justify-content: space-between; margin-bottom: 20px;">
+                        <h2 style="color: #FFD60A;">MASTER GRID</h2>
+                        <button id="btn-toggle-focus" style="background: var(--accent-blue); color: #FFF; border: none; padding: 8px 16px; border-radius: 6px; font-weight: bold;">Switch to Focus Mode ⚡</button>
+                    </div>
+                    <div style="width: 100%; overflow-x: auto;">
+                        <table style="width: 100%; color: #FFF; border-collapse: collapse; text-align: left;">
+                            <tr style="border-bottom: 2px solid #555; background: #222;">
+                                <th style="padding: 12px; color: #FFD60A;">#</th>
+                                <th style="padding: 12px; color: #FFD60A;">Name</th>
+                                <th style="padding: 12px;">Portrait</th>
+                                <th style="padding: 12px;">Dining</th>
+                                <th style="padding: 12px;">Other</th>
+                                <th style="padding: 12px; color: var(--accent-green);">Total</th>
+                            </tr>
+                `;
+                
+                currentTranscriptionData.forEach(row => {
+                    html += `
+                        <tr style="border-bottom: 1px solid #333;">
+                            <td style="padding: 12px; font-weight: bold;">${row.scheduleNumber}</td>
+                            <td style="padding: 12px;">${row.name}</td>
+                            <td style="padding: 12px; font-family: monospace; font-size: 18px;">${row.portrait}</td>
+                            <td style="padding: 12px; font-family: monospace; font-size: 18px;">${row.dining}</td>
+                            <td style="padding: 12px; font-family: monospace; font-size: 18px;">${row.other}</td>
+                            <td style="padding: 12px; font-weight: bold; color: var(--accent-green);">${row.total}</td>
+                        </tr>
+                    `;
+                });
+                
+                html += `</table></div>`;
+                content.innerHTML = html;
+                
+                document.getElementById('btn-toggle-focus').addEventListener('click', () => {
+                    isFocusMode = true;
+                    focusModeIndex = 0;
+                    renderTranscriptionView();
+                });
+
+            } else {
+                // --- FOCUS MODE (Flashcards) ---
+                const row = currentTranscriptionData[focusModeIndex];
+                
+                let html = `
+                    <div style="width: 100%; position: absolute; top: 20px; left: 20px;">
+                        <button id="btn-toggle-grid" style="background: #333; color: #FFF; border: none; padding: 8px 16px; border-radius: 6px;">⇦ Back to Grid</button>
+                    </div>
+                    
+                    <div style="text-align: center; width: 100%;" id="focus-tap-zone">
+                        <div style="color: #FFD60A; font-size: 24px; font-weight: bold; margin-bottom: 10px;">ROW ${focusModeIndex + 1} OF ${currentTranscriptionData.length}</div>
+                        
+                        <div style="background: #111; border: 3px solid #FFD60A; border-radius: 16px; padding: 40px; margin: 20px;">
+                            <h1 style="font-size: 42px; margin-bottom: 30px;">${row.scheduleNumber}. ${row.name.toUpperCase()}</h1>
+                            
+                            <div style="display: flex; justify-content: center; gap: 30px; font-family: monospace;">
+                                <div style="text-align: center;">
+                                    <div style="font-size: 16px; color: var(--text-secondary); margin-bottom: 10px; font-family: -apple-system, sans-serif;">PORTRAIT</div>
+                                    <div style="font-size: 64px; font-weight: bold;">[${row.portrait}]</div>
+                                </div>
+                                <div style="font-size: 64px; color: #555;">➔</div>
+                                <div style="text-align: center;">
+                                    <div style="font-size: 16px; color: var(--text-secondary); margin-bottom: 10px; font-family: -apple-system, sans-serif;">DINING</div>
+                                    <div style="font-size: 64px; font-weight: bold;">[${row.dining}]</div>
+                                </div>
+                                <div style="font-size: 64px; color: #555;">➔</div>
+                                <div style="text-align: center;">
+                                    <div style="font-size: 16px; color: var(--text-secondary); margin-bottom: 10px; font-family: -apple-system, sans-serif;">OTHER</div>
+                                    <div style="font-size: 64px; font-weight: bold;">[${row.other}]</div>
+                                </div>
+                            </div>
+                        </div>
+                        <p style="color: var(--text-secondary); margin-top: 20px;">Tap anywhere to advance to next photographer</p>
+                    </div>
+                `;
+                
+                content.innerHTML = html;
+                
+                // Tap to advance logic
+                document.getElementById('focus-tap-zone').addEventListener('click', () => {
+                    if (focusModeIndex < currentTranscriptionData.length - 1) {
+                        focusModeIndex++;
+                        
+                        // Haptic feedback simulation (works on iOS Safari if enabled)
+                        if (navigator.vibrate) navigator.vibrate(50);
+                        
+                        // Visual snap flash
+                        content.style.opacity = 0;
+                        setTimeout(() => {
+                            renderTranscriptionView();
+                            content.style.opacity = 1;
+                        }, 100);
+                        
+                    } else {
+                        // Reached the end
+                        content.innerHTML = `<div style="text-align: center;"><h1 style="color: var(--accent-green); font-size: 48px;">FINISHED</h1><p>All rows transcribed.</p></div>`;
+                    }
+                });
+                
+                document.getElementById('btn-toggle-grid').addEventListener('click', (e) => {
+                    e.stopPropagation(); // Prevent advancing the flashcard
+                    isFocusMode = false;
+                    renderTranscriptionView();
+                });
+            }
+        }
+
+        // Exit Transcription Mode
+        document.getElementById('btn-exit-transcription').addEventListener('click', () => {
+            document.getElementById('transcription-overlay').classList.add('hidden');
+            // Clear inputs for the next day
+            document.querySelectorAll('.eod-input').forEach(input => input.value = '');
+            document.getElementById('eod-grand-total').textContent = '0';
+        });
+        // ==========================================
+        // 10. LOGISTICS, INVENTORY & SPOILAGE (PILLAR 4)
+        // ==========================================
+
+        // Render the Inventory UI
+        async function renderLogistics() {
+            const container = document.getElementById('inventory-list-container');
+            
+            if (!currentContract) {
+                container.innerHTML = `<p style="color: var(--text-secondary); font-size: 14px;">No active contract envelope to track inventory.</p>`;
+                return;
+            }
+
+            // Ensure the inventory array exists on the contract object
+            if (!currentContract.inventory) {
+                currentContract.inventory = [];
+            }
+
+            container.innerHTML = `
+                <button id="btn-add-product" class="btn-primary" style="margin-bottom: 20px; background-color: #333; color: #FFF;">+ Add New Product</button>
+            `;
+
+            if (currentContract.inventory.length === 0) {
+                container.innerHTML += `<p style="color: var(--text-secondary); font-size: 14px;">No products tracked. Add your first item (e.g., Albums, USBs).</p>`;
+            } else {
+                currentContract.inventory.forEach(item => {
+                    // Check if storeroom is critically low (below corporate trigger)
+                    const isLowStock = item.storeroomCount <= item.corpTrigger;
+                    const stockColor = isLowStock ? 'var(--accent-red)' : 'var(--accent-green)';
+                    const warningIcon = isLowStock ? '⚠️ ORDER NEEDED' : '';
+
+                    const card = document.createElement('div');
+                    card.className = 'card';
+                    card.style.padding = '15px';
+                    card.innerHTML = `
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
+                            <div>
+                                <h4 style="font-size: 18px; margin: 0;">${item.name}</h4>
+                                <span style="font-size: 12px; color: ${stockColor}; font-weight: bold;">Storeroom: ${item.storeroomCount} ${warningIcon}</span>
+                            </div>
+                            <button class="btn-spoilage" data-id="${item.id}" style="background: none; border: 1px solid var(--accent-red); color: var(--accent-red); padding: 6px 10px; border-radius: 6px; font-size: 11px; cursor: pointer;">
+                                💥 Spoiled
+                            </button>
+                        </div>
+                        
+                        <div style="display: flex; gap: 10px; align-items: flex-end;">
+                            <div class="input-group" style="margin-bottom: 0; flex: 1;">
+                                <label style="font-size: 10px;">On Shelf Now (Max ${item.floorMax})</label>
+                                <input type="number" class="crunch-input" id="crunch-${item.id}" inputmode="numeric" pattern="[0-9]*" placeholder="0">
+                            </div>
+                            <button class="btn-crunch-pull" data-id="${item.id}" style="background: var(--accent-blue); color: #FFF; border: none; padding: 14px; border-radius: 10px; font-weight: bold; cursor: pointer;">
+                                Pull
+                            </button>
+                        </div>
+                    `;
+                    container.appendChild(card);
+                });
+            }
+
+            // Attach Event Listeners for Logistics Actions
+            const btnAddProduct = document.getElementById('btn-add-product');
+            if (btnAddProduct) {
+                btnAddProduct.addEventListener('click', addInventoryProduct);
+            }
+
+            document.querySelectorAll('.btn-crunch-pull').forEach(btn => {
+                btn.addEventListener('click', (e) => executeCrunchPull(e.currentTarget.getAttribute('data-id')));
+            });
+
+            document.querySelectorAll('.btn-spoilage').forEach(btn => {
+                btn.addEventListener('click', (e) => logSpoilage(e.currentTarget.getAttribute('data-id')));
+            });
+        }
+
+        // Add a New Product to Par Levels
+        async function addInventoryProduct() {
+            const name = prompt("Enter Product Name (e.g., Premium Leather Album):");
+            if (!name) return;
+
+            const floorMax = parseInt(prompt(`What is the maximum amount of ${name} that fits on the gallery shelf?`, "10"));
+            if (isNaN(floorMax) || floorMax <= 0) return;
+
+            const corpTrigger = parseInt(prompt(`At what storeroom quantity should the app warn you to order more from Miami?`, "20"));
+            if (isNaN(corpTrigger) || corpTrigger <= 0) return;
+
+            const currentStock = parseInt(prompt(`How many ${name} do you currently have in the master storeroom?`, "100"));
+            if (isNaN(currentStock)) return;
+
+            const newItem = {
+                id: crypto.randomUUID(),
+                name: name.trim(),
+                floorMax: floorMax,
+                corpTrigger: corpTrigger,
+                storeroomCount: currentStock
+            };
+
+            currentContract.inventory.push(newItem);
+
+            try {
+                // Save updated contract envelope to DB
+                await writeData('contracts', currentContract);
+                renderLogistics();
+            } catch (error) {
+                console.error("Failed to add product:", error);
+                alert("Error saving inventory product.");
+            }
+        }
+
+        // Execute The Crunch (Calculate pull list and deduct from storeroom)
+        async function executeCrunchPull(productId) {
+            const itemIndex = currentContract.inventory.findIndex(i => i.id === productId);
+            if (itemIndex === -1) return;
+
+            const item = currentContract.inventory[itemIndex];
+            const inputField = document.getElementById(`crunch-${productId}`);
+            const onShelfCount = parseInt(inputField.value);
+
+            if (isNaN(onShelfCount) || onShelfCount < 0) {
+                alert("Please enter a valid number for items on the shelf.");
+                return;
+            }
+
+            if (onShelfCount >= item.floorMax) {
+                alert(`Shelf is full! No need to pull ${item.name}.`);
+                inputField.value = '';
+                return;
+            }
+
+            // Calculate exact amount needed to fill the shelf
+            const pullAmount = item.floorMax - onShelfCount;
+
+            if (item.storeroomCount < pullAmount) {
+                alert(`CRITICAL WARNING: Not enough ${item.name} in storeroom! You need ${pullAmount}, but only have ${item.storeroomCount}.`);
+                return;
+            }
+
+            // Deduct from master storeroom count
+            currentContract.inventory[itemIndex].storeroomCount -= pullAmount;
+
+            try {
+                await writeData('contracts', currentContract);
+                
+                // Show the visual pull list prompt
+                alert(`✅ Pull ${pullAmount}x [${item.name}] from the storeroom to refill the floor.`);
+                
+                renderLogistics();
+            } catch (error) {
+                console.error("Failed to execute pull:", error);
+            }
+        }
+
+        // The Spoilage Tracker
+        async function logSpoilage(productId) {
+            const itemIndex = currentContract.inventory.findIndex(i => i.id === productId);
+            if (itemIndex === -1) return;
+
+            const item = currentContract.inventory[itemIndex];
+
+            const confirmSpoil = confirm(`Log 1x ${item.name} as SPOILED/BROKEN? This will remove 1 replacement item from the storeroom count immediately.`);
+            if (!confirmSpoil) return;
+
+            // Deduct 1 from storeroom to replace the broken one on the floor
+            currentContract.inventory[itemIndex].storeroomCount -= 1;
+
+            try {
+                await writeData('contracts', currentContract);
+                alert(`Spoilage logged. 1x ${item.name} deducted from storeroom for replacement.`);
+                renderLogistics();
+            } catch (error) {
+                console.error("Failed to log spoilage:", error);
+            }
+        }
+
+        // Generate Corporate Order Engine
+        document.getElementById('btn-generate-order').addEventListener('click', () => {
+            if (!currentContract || !currentContract.inventory) return;
+
+            const orderList = currentContract.inventory.filter(item => item.storeroomCount <= item.corpTrigger);
+
+            if (orderList.length === 0) {
+                alert("✅ Storeroom is healthy. No corporate orders needed at this time.");
+                return;
+            }
+
+            let orderText = "CRITICAL PULL LIST (Order from Corporate):\n\n";
+            orderList.forEach(item => {
+                // Calculating a suggested order amount (bringing it back to 3x the trigger)
+                const suggestedOrder = (item.corpTrigger * 3) - item.storeroomCount;
+                orderText += `📦 ${item.name}\n- Current: ${item.storeroomCount}\n- Triggered at: ${item.corpTrigger}\n- Suggested Order: ${suggestedOrder}\n\n`;
+            });
+
+            alert(orderText);
+        });
+
+        // Attach Logistics render to the navigation button
+        document.querySelector('.nav-btn[data-target="logistics"]').addEventListener('click', renderLogistics);
+        // ==========================================
+        // 11. TACTICAL DASHBOARD (PILLAR 2)
+        // ==========================================
+
+        function renderDashboard() {
+            const taskContainer = document.getElementById('task-list-container');
+            
+            if (!currentCycle) {
+                taskContainer.innerHTML = `<p style="color: var(--text-secondary); font-size: 14px; text-align: center; padding: 20px 0;">No active cycle. Start a cruise to generate tasks.</p>`;
+                return;
+            }
+
+            // For the Phase 1 MVP, we will inject a standard Daily Operational Checklist
+            // In Phase 2, this will pull from the dynamic 'tasks' IndexedDB table
+            const defaultTasks = [
+                { id: 1, text: "Verify Gangway Setup & Props", status: "pending" },
+                { id: 2, text: "Dispatch Memory Cards to Lab", status: "pending" },
+                { id: 3, text: "Execute Inventory Crunch Walk", status: "pending" },
+                { id: 4, text: "Generate Evening Break Rotation", status: "pending" },
+                { id: 5, text: "Check Dining Room Dispatch", status: "pending" }
+            ];
+
+            taskContainer.innerHTML = '';
+            
+            defaultTasks.forEach(task => {
+                const taskEl = document.createElement('div');
+                taskEl.style.display = 'flex';
+                taskEl.style.alignItems = 'center';
+                taskEl.style.padding = '12px 0';
+                taskEl.style.borderBottom = '1px solid var(--border-color)';
+                
+                // Using a native checkbox for rapid thumb interaction
+                taskEl.innerHTML = `
+                    <input type="checkbox" style="width: 20px; height: 20px; margin-right: 15px; accent-color: var(--accent-green);">
+                    <span style="font-size: 15px;">${task.text}</span>
+                `;
+                
+                // Strike-through effect when checked
+                const checkbox = taskEl.querySelector('input');
+                const textSpan = taskEl.querySelector('span');
+                
+                checkbox.addEventListener('change', (e) => {
+                    if (e.target.checked) {
+                        textSpan.style.textDecoration = 'line-through';
+                        textSpan.style.color = 'var(--text-secondary)';
+                    } else {
+                        textSpan.style.textDecoration = 'none';
+                        textSpan.style.color = 'var(--text-primary)';
+                    }
+                });
+                
+                taskContainer.appendChild(taskEl);
+            });
+        }
+
+        // Floor Check Logger (Traffic Snapshot)
+        document.getElementById('btn-floor-check').addEventListener('click', () => {
+            const traffic = prompt("Current Gallery Traffic Level (1-10)?\n1 = Empty, 10 = Packed");
+            if (!traffic) return;
+            
+            const note = prompt("Any pacing notes? (e.g., 'Moving fast', 'Stuck at registers')");
+            
+            alert(`Floor Check Logged at ${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}\nTraffic: ${traffic}/10\nNote: ${note || 'None'}`);
+            // In Phase 2, this will save to the analytics database.
+        });
+
+        // Attach Dashboard render to navigation
+        document.querySelector('.nav-btn[data-target="dashboard"]').addEventListener('click', renderDashboard);
+
+
+        // ==========================================
+        // 12. ALGORITHMIC BREAK SCHEDULER (PILLAR 3)
+        // ==========================================
+
+        let activeSchedule = [];
+
+        // Attach event listeners to the Night Type buttons
+        const scheduleButtons = document.querySelectorAll('#schedule-view .btn-primary');
+        scheduleButtons[0].addEventListener('click', () => generateBreaks('Casual'));
+        scheduleButtons[1].addEventListener('click', () => generateBreaks('Elegant'));
+        scheduleButtons[2].addEventListener('click', () => generateBreaks('Debarkation'));
+
+        async function generateBreaks(nightType) {
+            const container = document.getElementById('break-timeline-container');
+            container.innerHTML = `<p style="text-align: center; color: var(--text-secondary);">Calculating Algorithm...</p>`;
+
+            if (!currentContract) {
+                container.innerHTML = `<p style="color: var(--accent-red);">Error: No active contract.</p>`;
+                return;
+            }
+
+            try {
+                // Fetch the Roster
+                const team = await queryByIndex('roster', 'contractId', currentContract.id);
+                if (team.length === 0) {
+                    container.innerHTML = `<p>No team members to schedule.</p>`;
+                    return;
+                }
+
+                // Filter the eligible team based on Night Type logic
+                let eligibleTeam = [...team];
+                
+                // The Base Time Blocks (17:00 to 21:00)
+                const timeBlocks = [
+                    "17:00 - 17:30", "17:30 - 18:00", "18:00 - 18:30", 
+                    "18:30 - 19:00", "19:00 - 19:30", "19:30 - 20:00", 
+                    "20:00 - 20:30", "20:30 - 21:00"
+                ];
+
+                // Create the empty schedule grid
+                activeSchedule = timeBlocks.map(time => ({ time: time, slots: [] }));
+
+                // --- ALGORITHM ENGINE ---
+                let currentBlockIndex = 0;
+
+                eligibleTeam.forEach(member => {
+                    let assigned = false;
+
+                    // Elegant Night Override (Universal 20-min breaks before 9PM)
+                    // For UI simplicity in MVP, we keep the blocks but increase capacity or compress logic
+                    if (nightType === 'Elegant') {
+                        // Logic adjustment for Elegant: Everyone gets squeezed in.
+                    }
+
+                    // Loop through blocks to find the first one with < 2 people
+                    while (!assigned && currentBlockIndex < activeSchedule.length) {
+                        if (activeSchedule[currentBlockIndex].slots.length < 2) {
+                            activeSchedule[currentBlockIndex].slots.push(member);
+                            assigned = true;
+                        } else {
+                            // Block is full (2 max), move to next block
+                            currentBlockIndex++;
+                        }
+                    }
+
+                    // If we run out of blocks before 21:00, we hit the firewall.
+                    if (!assigned) {
+                        console.warn(`Could not fit ${member.name} before 21:00 cutoff!`);
+                        // Fallback to a late emergency block
+                        if (!activeSchedule.find(b => b.time === "21:00 - 21:30")) {
+                            activeSchedule.push({ time: "21:00 - 21:30 (WARNING)", slots: [] });
+                        }
+                        activeSchedule[activeSchedule.length - 1].slots.push(member);
+                    }
+                });
+
+                renderTimelineUI(nightType);
+
+            } catch (error) {
+                console.error("Scheduler Error:", error);
+                container.innerHTML = `<p style="color: var(--accent-red);">Algorithm Failed.</p>`;
+            }
+        }
+
+        function renderTimelineUI(nightType) {
+            const container = document.getElementById('break-timeline-container');
+            container.innerHTML = `<h4 style="margin-bottom: 15px; color: var(--accent-green); text-align: center;">${nightType} Night Rotation</h4>`;
+
+            activeSchedule.forEach(block => {
+                const blockEl = document.createElement('div');
+                blockEl.className = 'card';
+                blockEl.style.padding = '12px';
+                blockEl.style.marginBottom = '10px';
+                
+                let slotHTML = '';
+                if (block.slots.length === 0) {
+                    slotHTML = `<div style="color: var(--text-secondary); font-size: 12px; font-style: italic;">Empty Slot</div>`;
+                } else {
+                    block.slots.forEach(member => {
+                        slotHTML += `
+                            <div class="schedule-slot" onclick="rescheduleMember('${member.id}', '${member.name}')" style="background: #333; padding: 8px; border-radius: 6px; margin-bottom: 5px; font-size: 14px; font-weight: bold; cursor: pointer; display: flex; justify-content: space-between;">
+                                <span>${member.scheduleNumber}. ${member.name}</span>
+                                <span style="font-size: 10px; color: var(--accent-blue);">Tap to Move</span>
+                            </div>
+                        `;
+                    });
+                }
+
+                blockEl.innerHTML = `
+                    <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 8px; font-weight: bold;">
+                        ⏱ ${block.time}
+                        <span style="float: right; color: ${block.slots.length >= 2 ? 'var(--accent-red)' : 'var(--accent-green)'}">
+                            [${block.slots.length}/2 Max]
+                        </span>
+                    </div>
+                    ${slotHTML}
+                `;
+                container.appendChild(blockEl);
+            });
+        }
+
+        // Elastic Rescheduling (The Mobile alternative to Drag-and-Drop)
+        function rescheduleMember(memberId, memberName) {
+            const newTime = prompt(`Move ${memberName} to which time block?\n(Format: HH:MM, e.g., 18:30)`);
+            if (!newTime) return;
+
+            // Find the target block
+            const targetBlock = activeSchedule.find(b => b.time.startsWith(newTime));
+            
+            if (!targetBlock) {
+                alert("Invalid time block. Please use the exact start time format (e.g., 18:30).");
+                return;
+            }
+
+            // Firewall Check: Max 2 rule
+            if (targetBlock.slots.length >= 2) {
+                alert(`FIREWALL BLOCKED: Time block ${newTime} already has the maximum of 2 photographers on break. You must move someone else first.`);
+                return;
+            }
+
+            // Find where they currently are and remove them
+            let memberObj = null;
+            activeSchedule.forEach(block => {
+                const index = block.slots.findIndex(m => m.id === memberId);
+                if (index !== -1) {
+                    memberObj = block.slots.splice(index, 1)[0];
+                }
+            });
+
+            // Add them to the new block
+            if (memberObj) {
+                targetBlock.slots.push(memberObj);
+                renderTimelineUI("Updated"); // Re-render the UI
+            }
+        }
+
+        // Initialize the first view on app load
+        setTimeout(() => {
+            if (currentContract) {
+                renderDashboard();
+            }
+        }, 500);
+
+    </script>
+</body>
+</html>
