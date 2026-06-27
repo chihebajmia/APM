@@ -1,4 +1,4 @@
-const CACHE_NAME = 'apm-engine-v2';
+const CACHE_NAME = 'apm-engine-v3';
 const ASSETS_TO_CACHE = [
   './index.html',
   './manifest.json',
@@ -9,14 +9,14 @@ const ASSETS_TO_CACHE = [
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      console.log('[Service Worker] Caching offline assets');
+      console.log('[Service Worker] Caching offline assets v3');
       return cache.addAll(ASSETS_TO_CACHE);
     })
   );
   self.skipWaiting(); 
 });
 
-// Activate Event: Clears out old caches if you update the app code later
+// Activate Event: Clears out old caches to prevent version conflicts
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((cacheNames) => {
