@@ -1,51 +1,43 @@
-const CACHE_NAME = 'apm-engine-v1.0';
+const CACHE_NAME = 'apm-engine-v2';
 const ASSETS_TO_CACHE = [
-  './',
   './index.html',
   './manifest.json',
   './sw.js'
 ];
 
-// 1. Install Event (Downloads and caches the files)
+// Install Event: Caches core files upon initial load
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      console.log('Opened cache, adding offline assets');
+      console.log('[Service Worker] Caching offline assets');
       return cache.addAll(ASSETS_TO_CACHE);
     })
   );
-  // Force the waiting service worker to become the active service worker
-  self.skipWaiting();
+  self.skipWaiting(); 
 });
 
-// 2. Activate Event (Cleans up old versions if we push an update)
+// Activate Event: Clears out old caches if you update the app code later
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
-        cacheNames.map((cacheName) => {
-          if (cacheName !== CACHE_NAME) {
-            console.log('Deleting old cache:', cacheName);
-            return caches.delete(cacheName);
+        cacheNames.map((cache) => {
+          if (cache !== CACHE_NAME) {
+            console.log('[Service Worker] Clearing old cache');
+            return caches.delete(cache);
           }
         })
       );
     })
   );
-  // Claim all clients immediately so the app is instantly controlled
   self.clients.claim();
 });
 
-// 3. Fetch Event (Serves from cache first, otherwise falls back to network)
+// Fetch Event: Network-first approach, falling back to local cache if offline
 self.addEventListener('fetch', (event) => {
   event.respondWith(
-    caches.match(event.request).then((response) => {
-      // If we found it in the cache, return it instantly
-      if (response) {
-        return response;
-      }
-      // Otherwise, fetch from the internet
-      return fetch(event.request);
+    fetch(event.request).catch(() => {
+      return caches.match(event.request);
     })
   );
 });
