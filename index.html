@@ -545,6 +545,7 @@
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
                     <h2 style="font-size: 1.1rem; color: var(--text-main);">Daily Team Schedule</h2>
                     <button id="btn-add-shift" class="ui-btn ui-btn-green" style="width: auto; padding: 6px 12px; font-size: 0.85rem;">+ Add Shift</button>
+                    <button id="btn-auto-breaks" class="ui-btn ui-btn-outline" style="width: auto; padding: 6px 12px; font-size: 0.85rem; border-color: var(--accent-blue); color: var(--accent-blue);">⚡ Auto-Breaks</button>
                 </div>
                 <div id="schedule-warning-banner" class="hidden" style="background: rgba(255, 214, 10, 0.1); border: 1px solid var(--accent-yellow); color: var(--accent-yellow); padding: 8px; border-radius: 6px; font-size: 0.8rem; margin-bottom: 12px;">
                     <!-- Dynamic warnings (e.g. >2 on break) inject here -->
@@ -1218,9 +1219,14 @@
                 const activeVoyage = await db.get('voyages', appState.voyageId);
                 if (!activeVoyage || !activeVoyage.guests) return;
 
+                // 1. Calculate true cruise length for Voyage Target
+                const start = new Date(activeVoyage.startDate);
+                const end = new Date(activeVoyage.endDate);
+                const cruiseLength = Math.max(1, (end - start) / (1000 * 60 * 60 * 24));
+                const totalVoyageTarget = activeVoyage.guests * activeVoyage.targetGcd * cruiseLength;
+
                 const allRevenue = await db.getAllByIndex('daily_revenue', 'voyageId', appState.voyageId);
                 
-                // --- 1. CURRENT VOYAGE PACING ---
                 let voyageShipRev = 0;
                 let voyageDsRev = 0;
 
@@ -1229,30 +1235,22 @@
                     voyageDsRev += day.dsRevenue;
                 });
 
-                const voyageActualGcd = (voyageShipRev / activeVoyage.guests);
-                const voyageDsGcd = (voyageDsRev / activeVoyage.guests);
-
-                document.getElementById('dash-actual-gcd').innerText = `$${voyageActualGcd.toFixed(2)}`;
-                document.getElementById('dash-target-gcd').innerText = `$${activeVoyage.targetGcd.toFixed(2)}`;
-                document.getElementById('dash-ds-gcd').innerText = `$${voyageDsGcd.toFixed(2)}`;
+                document.getElementById('dash-actual-gcd').innerText = `$${voyageShipRev.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+                document.getElementById('dash-target-gcd').innerText = `$${totalVoyageTarget.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+                document.getElementById('dash-ds-gcd').innerText = `$${voyageDsRev.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
                 document.getElementById('dash-ds-rev').innerText = `$${voyageDsRev.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
 
                 const varBox = document.getElementById('dash-gcd-variance');
                 if (allRevenue.length === 0) {
                     varBox.innerText = 'Awaiting Revenue Data';
                     varBox.style.cssText = 'margin-top: 12px; padding: 6px; border-radius: 4px; text-align: center; font-size: 0.85rem; font-weight: bold; background: var(--bg-input); color: var(--text-muted);';
-                } else if (voyageActualGcd >= activeVoyage.targetGcd) {
-                    varBox.innerText = `OVER TARGET (+ $${(voyageActualGcd - activeVoyage.targetGcd).toFixed(2)})`;
+                } else if (voyageShipRev >= totalVoyageTarget) {
+                    varBox.innerText = `OVER TARGET (+ $${(voyageShipRev - totalVoyageTarget).toLocaleString(undefined, {minimumFractionDigits: 2})})`;
                     varBox.style.cssText = 'margin-top: 12px; padding: 6px; border-radius: 4px; text-align: center; font-size: 0.85rem; font-weight: bold; background: var(--accent-green); color: #000;';
                 } else {
-                    const variance = activeVoyage.targetGcd - voyageActualGcd;
-                    if (variance <= 0.50) {
-                        varBox.innerText = `APPROACHING (- $${variance.toFixed(2)})`;
-                        varBox.style.cssText = 'margin-top: 12px; padding: 6px; border-radius: 4px; text-align: center; font-size: 0.85rem; font-weight: bold; background: var(--accent-yellow); color: #000;';
-                    } else {
-                        varBox.innerText = `DEFICIT (- $${variance.toFixed(2)})`;
-                        varBox.style.cssText = 'margin-top: 12px; padding: 6px; border-radius: 4px; text-align: center; font-size: 0.85rem; font-weight: bold; background: var(--accent-red); color: #fff;';
-                    }
+                    const variance = totalVoyageTarget - voyageShipRev;
+                    varBox.innerText = `DEFICIT (- $${variance.toLocaleString(undefined, {minimumFractionDigits: 2})})`;
+                    varBox.style.cssText = 'margin-top: 12px; padding: 6px; border-radius: 4px; text-align: center; font-size: 0.85rem; font-weight: bold; background: var(--accent-red); color: #fff;';
                 }
 
                 const statusBadge = document.getElementById('dash-voyage-status');
@@ -1260,41 +1258,42 @@
                 statusBadge.style.color = '#000';
                 statusBadge.style.background = 'var(--accent-green)';
 
-                // --- 2. MONTHLY CORPORATE PACING ---
+                // Monthly Corporate Pacing (Unchanged logic)
                 if (activeVoyage.monthId) {
                     const monthRecord = await db.get('months', activeVoyage.monthId);
                     if (monthRecord && monthRecord.targetGcd) {
-                        
                         const allVoyages = await db.getAll('voyages');
                         const monthVoyages = allVoyages.filter(v => v.monthId === activeVoyage.monthId && (v.status === 'active' || v.status === 'completed'));
                         
                         let totalMonthRev = 0;
                         let totalMonthGuests = 0;
+                        let totalMonthDays = 0;
 
                         for (const v of monthVoyages) {
-                            if (v.guests) totalMonthGuests += v.guests;
+                            if (v.guests) {
+                                totalMonthGuests += v.guests;
+                                totalMonthDays += Math.max(1, (new Date(v.endDate) - new Date(v.startDate)) / (1000 * 60 * 60 * 24));
+                            }
                             const vRev = await db.getAllByIndex('daily_revenue', 'voyageId', v.voyageId);
                             vRev.forEach(r => totalMonthRev += r.shipRevenue);
                         }
 
-                        const monthActualGcd = totalMonthGuests > 0 ? (totalMonthRev / totalMonthGuests) : 0;
-                        document.getElementById('dash-month-actual').innerText = `$${monthActualGcd.toFixed(2)}`;
-                        document.getElementById('dash-month-target').innerText = `Target: $${monthRecord.targetGcd.toFixed(2)}`;
+                        // Simplified cumulative tracking against the raw monthly target number
+                        document.getElementById('dash-month-actual').innerText = `$${totalMonthRev.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+                        document.getElementById('dash-month-target').innerText = `Target: $${monthRecord.targetGcd.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
 
-                        let progressPct = (monthActualGcd / monthRecord.targetGcd) * 100;
+                        let progressPct = (totalMonthRev / monthRecord.targetGcd) * 100;
                         if (progressPct > 100) progressPct = 100;
                         
                         const progBar = document.getElementById('dash-month-progress');
                         progBar.style.width = `${progressPct}%`;
                         
-                        // Dynamic colorization
                         if (progressPct >= 100) progBar.style.background = 'var(--accent-green)';
                         else if (progressPct >= 90) progBar.style.background = 'var(--accent-yellow)';
                         else progBar.style.background = 'var(--accent-blue)';
                     }
                 }
 
-                // --- 3. GANGWAY TIME CALCULATION ---
                 const today = new Date().toISOString().split('T')[0];
                 const itineraryDays = await db.getAllByIndex('itineraries', 'voyageId', appState.voyageId);
                 const nextPortDay = itineraryDays.find(day => day.date >= today && day.type === 'port' && day.gangway);
@@ -1320,7 +1319,6 @@
                 const today = new Date().toISOString().split('T')[0];
                 const itineraryDays = await db.getAllByIndex('itineraries', 'voyageId', appState.voyageId);
                 
-                // Identify Current Day & Port
                 const todayItinerary = itineraryDays.find(d => d.date === today);
                 let dayText = `Day ? of ${itineraryDays.length}`;
                 if (todayItinerary) {
@@ -1330,15 +1328,21 @@
                 }
                 
                 document.getElementById('eod-cruise-day').innerText = dayText;
-                document.getElementById('eod-pryr-display').innerText = activeVoyage.pryrGcd ? `$${activeVoyage.pryrGcd.toFixed(2)}` : 'N/A';
+                
+                // Target Gap recalculation based on actual cruise length
+                const start = new Date(activeVoyage.startDate);
+                const end = new Date(activeVoyage.endDate);
+                const cruiseLength = Math.max(1, (end - start) / (1000 * 60 * 60 * 24));
+                const totalTargetRev = activeVoyage.guests * activeVoyage.targetGcd * cruiseLength;
+                
+                const totalPryrRev = activeVoyage.pryrGcd ? (activeVoyage.guests * activeVoyage.pryrGcd * cruiseLength) : 0;
+                document.getElementById('eod-pryr-display').innerText = activeVoyage.pryrGcd ? `$${totalPryrRev.toLocaleString(undefined, {minimumFractionDigits: 2})}` : 'N/A';
 
-                // Calculate Target Gap
                 const allRevenue = await db.getAllByIndex('daily_revenue', 'voyageId', appState.voyageId);
                 let currentShipRev = 0;
                 allRevenue.forEach(day => currentShipRev += day.shipRevenue);
                 
-                const targetRev = activeVoyage.guests * activeVoyage.targetGcd;
-                const gap = targetRev - currentShipRev;
+                const gap = totalTargetRev - currentShipRev;
                 
                 const gapEl = document.getElementById('eod-target-gap');
                 if (gap <= 0) {
@@ -1349,7 +1353,6 @@
                     gapEl.style.color = 'var(--accent-yellow)';
                 }
 
-                // Render EOD Mini-Ledger
                 const ledgerBox = document.getElementById('eod-ledger-mini');
                 ledgerBox.innerHTML = '';
                 
@@ -1369,7 +1372,6 @@
                         `;
                     });
                 }
-
             } catch (error) {
                 console.error('Failed to render EOD context:', error);
             }
@@ -1639,23 +1641,29 @@
         // Master function to determine operational constraints for tonight
         async function getCurrentDayType() {
             if (!appState.voyageId) return 'casual';
+            
+            const activeVoyage = await db.get('voyages', appState.voyageId);
+            if (!activeVoyage) return 'casual';
+
             const today = new Date().toISOString().split('T')[0];
+            
+            // Debarkation Eve is strictly EndDate minus 1 day
+            const cruiseEnd = new Date(activeVoyage.endDate);
+            const debarkEve = new Date(cruiseEnd);
+            debarkEve.setDate(debarkEve.getDate() - 1);
+            
+            if (today === debarkEve.toISOString().split('T')[0]) {
+                return 'debark';
+            }
+
             const itineraryDays = await db.getAllByIndex('itineraries', 'voyageId', appState.voyageId);
-
-            if (itineraryDays.length === 0) return 'casual';
-
-            // Find final day of cruise for Debark logic
-            itineraryDays.sort((a, b) => a.dayNumber - b.dayNumber);
-            const lastDay = itineraryDays[itineraryDays.length - 1];
-
             const todayData = itineraryDays.find(d => d.date === today);
-            if (!todayData) return 'casual'; 
-
-            if (todayData.date === lastDay.date) return 'debark'; 
-            if (todayData.elegant) return 'elegant';
+            
+            if (todayData && todayData.elegant) return 'elegant';
 
             return 'casual';
         }
+
 
         document.getElementById('btn-add-shift').addEventListener('click', async () => {
             document.getElementById('schedule-empty-state')?.remove();
@@ -1817,6 +1825,75 @@
 
             scheduleGrid.appendChild(row);
         });
+
+                // Dynamic Auto-Break Generator
+        document.getElementById('btn-auto-breaks')?.addEventListener('click', () => {
+            const rows = document.querySelectorAll('.schedule-row');
+            if (rows.length === 0) return alert('Add shifts before generating breaks.');
+
+            // Master Timeline: 17:30 to 21:00 (since breaks are 30 mins, 21:00 ends at 21:30)
+            const timeSlots = ['17:30', '18:00', '18:30', '19:00', '19:30', '20:00', '20:30', '21:00'];
+            let slotCapacity = {}; 
+            timeSlots.forEach(t => slotCapacity[t] = 0);
+
+            // Step 1: Discover inputs dynamically
+            let crewNeedingTwo = [];
+            let crewNeedingOne = [];
+
+            rows.forEach(row => {
+                const dayType = row.dataset.dayType;
+                if (dayType === 'debark') return; // Debark requires manual copy-side strategy
+                
+                const start = row.querySelector('.sched-start').value;
+                const b1 = row.querySelector('.sched-break-1');
+                const b2 = row.querySelector('.sched-break-2');
+
+                if (dayType === 'elegant') {
+                    crewNeedingOne.push({ b1Input: b1 });
+                } else {
+                    if (start === '16:00') {
+                        crewNeedingTwo.push({ b1Input: b1, b2Input: b2 });
+                    } else if (start === '17:00') {
+                        crewNeedingOne.push({ b1Input: b1 });
+                    }
+                }
+            });
+
+            // Helper to find the next available slot that doesn't exceed 2 people
+            function getAvailableSlot(excludeSlot = null) {
+                for (const slot of timeSlots) {
+                    if (slotCapacity[slot] < 2 && slot !== excludeSlot) {
+                        return slot;
+                    }
+                }
+                return null; // Floor is fully saturated
+            }
+
+            // Step 2: Assign breaks
+            // Pass 1: Give everyone their first break
+            [...crewNeedingTwo, ...crewNeedingOne].forEach(crew => {
+                const slot = getAvailableSlot();
+                if (slot) {
+                    crew.b1Input.value = slot;
+                    crew.assignedB1 = slot; // Store to prevent overlapping their 2nd break
+                    slotCapacity[slot]++;
+                }
+            });
+
+            // Pass 2: Give the 16:00 crew their second break
+            crewNeedingTwo.forEach(crew => {
+                // Ensure their second break isn't back-to-back with their first if possible
+                const slot = getAvailableSlot(crew.assignedB1);
+                if (slot) {
+                    crew.b2Input.value = slot;
+                    slotCapacity[slot]++;
+                }
+            });
+
+            // Trigger visual math validation immediately after generating
+            if (typeof validateScheduleMath === 'function') validateScheduleMath();
+        });
+
         // ==========================================
         // 10. SCHEDULE VALIDATION & MATH ENGINE
         // ==========================================
