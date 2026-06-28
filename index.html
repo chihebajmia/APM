@@ -2,44 +2,37 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <!-- CRITICAL FIX: Prevents iOS Safari from zooming in on input fields during fast data entry -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     
-    <!-- PWA Configuration & iOS Native App parameters -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="APM Engine">
     <link rel="manifest" href="./manifest.json">
     
-    <title>Universal APM Engine</title>
+    <title>Universal APM Engine V3</title>
 
     <style>
         /* =========================================
            1. ROOT VARIABLES & DESIGN SYSTEM
            ========================================= */
         :root {
-            /* OLED Battery Saving Dark Mode */
             --bg-base: #000000;         
             --bg-card: #141414;         
             --bg-input: #222222;
             --bg-elevated: #2a2a2a;        
             
-            /* Typography */
             --text-main: #f0f0f0;       
             --text-muted: #888888;      
             
-            /* Status Colors */
             --accent-green: #32D74B;    
             --accent-red: #FF453A;      
             --accent-yellow: #FFD60A;   
             --accent-blue: #0A84FF;     
             
-            /* Geometry */
             --border-subtle: 1px solid #333333;
             --radius-card: 12px;
             --radius-input: 8px;
             
-            /* Spacing */
             --pad-sm: 8px;
             --pad-md: 16px;
             --pad-lg: 24px;
@@ -60,8 +53,8 @@
             background-color: var(--bg-base);
             color: var(--text-main);
             overflow-x: hidden;
-            overscroll-behavior-y: none; /* Disables pull-to-refresh */
-            padding-bottom: 100px; /* Safe space for 5-button bottom nav */
+            overscroll-behavior-y: none;
+            padding-bottom: 100px;
         }
 
         /* =========================================
@@ -83,7 +76,7 @@
             border: none;
             border-radius: var(--radius-input);
             margin-bottom: 12px;
-            font-size: 1rem; /* Forces minimum size to prevent iOS zoom */
+            font-size: 1rem;
         }
         
         .ui-input:focus {
@@ -115,6 +108,34 @@
         .ui-btn-outline { background: transparent; border: 1px solid var(--text-muted); color: var(--text-main); }
         
         .hidden { display: none !important; }
+
+        /* Progress Bar Styles */
+        .progress-bar-bg {
+            width: 100%;
+            height: 12px;
+            background: var(--bg-input);
+            border-radius: 6px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background: var(--accent-blue);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        /* Status & Conflict Badges */
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: bold;
+        }
+        .badge-warning { background: var(--accent-yellow); color: #000; }
+        .badge-danger { background: var(--accent-red); color: #fff; }
+        .badge-demo { background: var(--bg-input); color: var(--accent-blue); border: 1px solid var(--accent-blue); }
 
         /* =========================================
            4. MODAL OVERLAY SYSTEM
@@ -181,7 +202,7 @@
             background: none;
             border: none;
             color: var(--text-muted);
-            font-size: 0.70rem; /* Slightly smaller to fit 5 buttons */
+            font-size: 0.70rem;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -202,22 +223,15 @@
     <header id="app-header">
         <div>
             <h1 style="font-size: 1.2rem; margin-bottom: 2px;">APM Engine</h1>
-            <!-- Dynamic Subtitle (E.g., Sunrise - Print) -->
             <span id="header-voyage-id" style="font-size: 0.8rem; color: var(--text-muted);">Awaiting Configuration</span>
         </div>
-        
-        <!-- Top Level Settings Gear -->
-        <button id="btn-open-settings" style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">
-            ⚙️
-        </button>
+        <button id="btn-open-settings" style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">⚙️</button>
     </header>
 
-    <!-- =========================================
-         DYNAMIC VIEW CONTAINER
-         ========================================= -->
     <main id="view-container">
+        
         <!-- =========================================
-             SETTINGS & CONFIGURATION MODAL (Z-Index: 1000)
+             SETTINGS & DATA MANAGEMENT MODAL
              ========================================= -->
         <div id="modal-settings" class="ui-modal-overlay hidden">
             <div class="ui-modal-content">
@@ -251,51 +265,59 @@
                         </div>
                     </div>
 
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                        <div>
-                            <label class="ui-label">Target GCD ($)</label>
-                            <input type="number" id="cfg-target-gcd" class="ui-input" inputmode="decimal" step="0.01" placeholder="0.00">
-                        </div>
-                        <div>
-                            <label class="ui-label">PRYR GCD ($)</label>
-                            <input type="number" id="cfg-pryr-gcd" class="ui-input" inputmode="decimal" step="0.01" placeholder="0.00">
-                        </div>
-                    </div>
-
                     <button id="btn-save-contract" class="ui-btn ui-btn-blue" style="margin-bottom: 8px;">Lock Contract Parameters</button>
-                    <button id="btn-execute-transfer" class="ui-btn ui-btn-outline" style="color: var(--accent-red); border-color: var(--accent-red); font-size: 0.85rem;">⚠️ Execute Transfer (Archive & Reset)</button>
                 </div>
 
-                <!-- 2. VOYAGE BUILDER -->
+                <!-- 2. SYSTEM DATA MANAGEMENT (NEW) -->
+                <div class="ui-card" style="border-color: var(--text-muted);">
+                    <h3 style="font-size: 1rem; margin-bottom: 8px; color: var(--text-main);">2. Data Management</h3>
+                    <p style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 12px;">Secure your local browser data offline.</p>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
+                        <button id="btn-export-backup" class="ui-btn ui-btn-outline" style="font-size: 0.85rem;">📥 Export Backup</button>
+                        <label for="input-restore-backup" class="ui-btn ui-btn-outline" style="font-size: 0.85rem; cursor: pointer; margin: 0; display: block;">📤 Restore Backup</label>
+                        <input type="file" id="input-restore-backup" accept=".json" class="hidden">
+                    </div>
+                    
+                    <button id="btn-execute-reset" class="ui-btn" style="background: rgba(255, 69, 58, 0.1); color: var(--accent-red); border: 1px solid var(--accent-red); font-size: 0.85rem;">⚠️ Hard Reset Database</button>
+                </div>
+
+                <!-- 3. VOYAGE INGESTION ENGINE -->
                 <div class="ui-card" id="config-voyage-section" style="border-color: var(--accent-green);">
-                    <h3 style="font-size: 1rem; margin-bottom: 12px; color: var(--accent-green);">2. Voyage Builder</h3>
+                    <h3 style="font-size: 1rem; margin-bottom: 12px; color: var(--accent-green);">3. Voyage Builder</h3>
                     
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                        <div>
-                            <label class="ui-label">Voyage ID</label>
-                            <input type="text" id="cfg-voyage-id" class="ui-input" placeholder="e.g. SU260803">
-                        </div>
-                        <div>
-                            <label class="ui-label">Guest Count</label>
-                            <input type="number" id="cfg-guests" class="ui-input" inputmode="numeric" placeholder="Total">
-                        </div>
-                    </div>
+                    <label class="ui-label">Bulk Load Itineraries (JSON)</label>
+                    <textarea id="cfg-json-input" class="ui-input" rows="4" placeholder="Paste monthly corporate JSON here..." style="font-family: monospace; font-size: 0.75rem; resize: vertical;"></textarea>
                     
-                    <label class="ui-label">Cruise Length (Days)</label>
-                    <div style="display: flex; gap: 10px;">
-                        <input type="number" id="cfg-cruise-length" class="ui-input" inputmode="numeric" placeholder="e.g. 7" style="margin-bottom: 0;">
-                        <button id="btn-generate-itinerary" class="ui-btn ui-btn-green" style="width: auto; padding: 0 16px;">Generate</button>
+                    <div style="display: flex; gap: 10px; margin-bottom: 16px;">
+                        <button id="btn-ingest-json" class="ui-btn ui-btn-green" style="font-size: 0.9rem;">Parse JSON</button>
+                        <button id="btn-show-manual-voyage" class="ui-btn ui-btn-outline" style="font-size: 0.9rem;">+ Add Manual</button>
                     </div>
 
-                    <!-- Dynamic Itinerary Grid Injected Here via JS -->
-                    <div id="itinerary-grid-container" style="margin-top: 12px; display: flex; flex-direction: column; gap: 8px;"></div>
-                    
-                    <button id="btn-save-voyage" class="ui-btn ui-btn-green hidden" style="margin-top: 12px;">Lock Voyage Itinerary</button>
+                    <!-- Manual Voyage Builder (Hidden by default) -->
+                    <div id="manual-voyage-builder" class="hidden" style="border-top: 1px dashed var(--border-subtle); padding-top: 12px; margin-bottom: 12px;">
+                        <label class="ui-label">Voyage ID</label>
+                        <input type="text" id="cfg-manual-vid" class="ui-input" placeholder="e.g. SU260803">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                            <div><label class="ui-label">Start Date</label><input type="date" id="cfg-manual-start" class="ui-input"></div>
+                            <div><label class="ui-label">End Date</label><input type="date" id="cfg-manual-end" class="ui-input"></div>
+                        </div>
+                        <button id="btn-save-manual-voyage" class="ui-btn ui-btn-green" style="font-size: 0.85rem;">Save Pending Voyage</button>
+                    </div>
+
+                    <!-- List of Pending Voyages for Activation -->
+                    <h4 style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 8px;">Pending Voyages:</h4>
+                    <div id="pending-voyages-list" style="display: flex; flex-direction: column; gap: 8px;">
+                        <div style="font-size: 0.75rem; color: var(--text-muted); text-align: center;">No voyages loaded.</div>
+                    </div>
                 </div>
 
-                <!-- 3. GALLERY BLUEPRINT (Hidden if Digital) -->
+                <!-- 4. GALLERY BLUEPRINT -->
                 <div class="ui-card" id="config-gallery-section" style="border-color: var(--accent-yellow);">
-                    <h3 style="font-size: 1rem; margin-bottom: 8px; color: var(--accent-yellow);">3. Gallery Blueprint</h3>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <h3 style="font-size: 1rem; color: var(--accent-yellow);">4. Gallery Blueprint</h3>
+                        <span id="demo-mode-badge" class="status-badge badge-demo hidden">Demo Mode</span>
+                    </div>
                     <p style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 12px;">Define physical hardware limits to enable real-estate math.</p>
                     
                     <label class="ui-label">Editing Panel Type</label>
@@ -318,26 +340,11 @@
 
                     <label class="ui-label" style="margin-top: 4px;">Session Capacity (Per Line)</label>
                     <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px;">
-                        <div>
-                            <span style="display: block; font-size: 0.65rem; color: var(--text-muted); text-align: center;">8x10</span>
-                            <input type="number" id="cfg-cap-8x10" class="ui-input" style="padding: 8px 4px; text-align: center; font-size: 0.85rem;" placeholder="#">
-                        </div>
-                        <div>
-                            <span style="display: block; font-size: 0.65rem; color: var(--text-muted); text-align: center;">6x9 H</span>
-                            <input type="number" id="cfg-cap-6x9h" class="ui-input" style="padding: 8px 4px; text-align: center; font-size: 0.85rem;" placeholder="#">
-                        </div>
-                        <div>
-                            <span style="display: block; font-size: 0.65rem; color: var(--text-muted); text-align: center;">6x9 V</span>
-                            <input type="number" id="cfg-cap-6x9v" class="ui-input" style="padding: 8px 4px; text-align: center; font-size: 0.85rem;" placeholder="#">
-                        </div>
-                        <div>
-                            <span style="display: block; font-size: 0.65rem; color: var(--text-muted); text-align: center;">5x7 H</span>
-                            <input type="number" id="cfg-cap-5x7h" class="ui-input" style="padding: 8px 4px; text-align: center; font-size: 0.85rem;" placeholder="#">
-                        </div>
-                        <div>
-                            <span style="display: block; font-size: 0.65rem; color: var(--text-muted); text-align: center;">5x7 V</span>
-                            <input type="number" id="cfg-cap-5x7v" class="ui-input" style="padding: 8px 4px; text-align: center; font-size: 0.85rem;" placeholder="#">
-                        </div>
+                        <div><span style="display: block; font-size: 0.65rem; color: var(--text-muted); text-align: center;">8x10</span><input type="number" id="cfg-cap-8x10" class="ui-input" style="padding: 8px 4px; text-align: center; font-size: 0.85rem;" placeholder="#"></div>
+                        <div><span style="display: block; font-size: 0.65rem; color: var(--text-muted); text-align: center;">6x9 H</span><input type="number" id="cfg-cap-6x9h" class="ui-input" style="padding: 8px 4px; text-align: center; font-size: 0.85rem;" placeholder="#"></div>
+                        <div><span style="display: block; font-size: 0.65rem; color: var(--text-muted); text-align: center;">6x9 V</span><input type="number" id="cfg-cap-6x9v" class="ui-input" style="padding: 8px 4px; text-align: center; font-size: 0.85rem;" placeholder="#"></div>
+                        <div><span style="display: block; font-size: 0.65rem; color: var(--text-muted); text-align: center;">5x7 H</span><input type="number" id="cfg-cap-5x7h" class="ui-input" style="padding: 8px 4px; text-align: center; font-size: 0.85rem;" placeholder="#"></div>
+                        <div><span style="display: block; font-size: 0.65rem; color: var(--text-muted); text-align: center;">5x7 V</span><input type="number" id="cfg-cap-5x7v" class="ui-input" style="padding: 8px 4px; text-align: center; font-size: 0.85rem;" placeholder="#"></div>
                     </div>
                     
                     <label class="ui-label">Assigned Categories</label>
@@ -347,25 +354,81 @@
                 </div>
             </div>
         </div>
+
+        <!-- =========================================
+             VOYAGE ACTIVATION MODAL (Dynamic Prompts)
+             ========================================= -->
+        <div id="modal-activate-voyage" class="ui-modal-overlay hidden">
+            <div class="ui-modal-content" style="border-color: var(--accent-green);">
+                <h2 style="font-size: 1.2rem; color: var(--accent-green); margin-bottom: 12px;">Activate Voyage <span id="act-voyage-title"></span></h2>
+                
+                <div id="act-monthly-target-wrapper" class="hidden" style="margin-bottom: 16px; padding: 12px; background: var(--bg-elevated); border-radius: 8px; border: 1px dashed var(--accent-blue);">
+                    <h3 style="font-size: 0.9rem; margin-bottom: 8px; color: var(--accent-blue);">New Financial Month Detected</h3>
+                    <label class="ui-label">Corporate Monthly Target GCD ($)</label>
+                    <input type="number" id="act-monthly-target" class="ui-input" inputmode="decimal" placeholder="0.00">
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div style="grid-column: span 2;">
+                        <label class="ui-label">Total Guest Count</label>
+                        <input type="number" id="act-guests" class="ui-input" inputmode="numeric" placeholder="e.g. 3500">
+                    </div>
+                    <div>
+                        <label class="ui-label">Voyage Target GCD ($)</label>
+                        <input type="number" id="act-target-gcd" class="ui-input" inputmode="decimal" placeholder="0.00">
+                    </div>
+                    <div>
+                        <label class="ui-label">Voyage PRYR GCD ($)</label>
+                        <input type="number" id="act-pryr-gcd" class="ui-input" inputmode="decimal" placeholder="0.00">
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 10px; margin-top: 12px;">
+                    <button id="btn-confirm-activation" class="ui-btn ui-btn-green">Activate & Launch</button>
+                    <button id="btn-cancel-activation" class="ui-btn ui-btn-outline">Cancel</button>
+                </div>
+            </div>
+        </div>
+        <!-- =========================================
+             VIEW 1: DASHBOARD
+             ========================================= -->
         <div id="view-dashboard" class="app-view">
             
+            <!-- MONTHLY PACING BAR (NEW V3) -->
+            <div class="ui-card" style="border-color: var(--text-muted); margin-bottom: 12px;">
+                <h2 style="font-size: 1rem; color: var(--text-muted); margin-bottom: 8px;">Monthly Corporate Pacing</h2>
+                <div style="display: flex; justify-content: space-between; align-items: baseline;">
+                    <div id="dash-month-actual" style="font-size: 1.5rem; font-weight: bold; color: var(--text-main);">$0.00</div>
+                    <div id="dash-month-target" style="font-size: 1rem; color: var(--text-muted);">Target: $0.00</div>
+                </div>
+                <div class="progress-bar-bg">
+                    <div id="dash-month-progress" class="progress-bar-fill"></div>
+                </div>
+            </div>
+
+            <!-- VOYAGE CUMULATIVE PACING -->
             <div class="ui-card">
-                <h2 style="font-size: 1rem; color: var(--text-muted); margin-bottom: 8px;">Ship Cumulative Pacing</h2>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <h2 style="font-size: 1rem; color: var(--text-muted);">Current Voyage Pacing</h2>
+                    <span id="dash-voyage-status" class="status-badge" style="background: var(--bg-input); color: var(--text-muted);">Pending</span>
+                </div>
+                
                 <div style="display: flex; justify-content: space-between; align-items: baseline;">
                     <div>
                         <span style="font-size: 0.8rem; color: var(--text-muted);">Actual GCD</span>
                         <div id="dash-actual-gcd" style="font-size: 2rem; font-weight: bold; color: var(--text-main);">$0.00</div>
                     </div>
                     <div style="text-align: right;">
-                        <span style="font-size: 0.8rem; color: var(--text-muted);">Target</span>
+                        <span style="font-size: 0.8rem; color: var(--text-muted);">Target GCD</span>
                         <div id="dash-target-gcd" style="font-size: 1.2rem; color: var(--text-main);">$0.00</div>
                     </div>
                 </div>
-                <div id="dash-gcd-status" style="margin-top: 12px; padding: 6px; border-radius: 4px; text-align: center; font-size: 0.85rem; font-weight: bold; background: var(--bg-input); color: var(--text-muted);">
+                <div id="dash-gcd-variance" style="margin-top: 12px; padding: 6px; border-radius: 4px; text-align: center; font-size: 0.85rem; font-weight: bold; background: var(--bg-input); color: var(--text-muted);">
                     Awaiting Revenue Data
                 </div>
             </div>
 
+            <!-- DS PULSE -->
             <div class="ui-card" style="border-color: var(--accent-blue);">
                 <h2 style="font-size: 1rem; color: var(--accent-blue); margin-bottom: 8px;">Dreams Studio (DS) Pulse</h2>
                 <div style="display: flex; justify-content: space-between; align-items: baseline;">
@@ -380,21 +443,28 @@
                 </div>
             </div>
 
+            <!-- MORNING WORKFLOW -->
             <div id="dash-gallery-setup" class="ui-card" style="border-color: var(--accent-yellow);">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                    <h2 style="font-size: 1rem; color: var(--accent-yellow);">Morning Gallery Workflow</h2>
+                    <h2 style="font-size: 1rem; color: var(--accent-yellow);">Morning Workflow</h2>
                     <span id="dash-gangway-time" style="font-size: 0.8rem; background: var(--bg-input); padding: 4px 8px; border-radius: 4px;">Gangway: --:--</span>
                 </div>
-                <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px;">
-                    Required Setup based on last night's print volume:
-                </div>
-                <ul style="list-style: none; padding: 0; font-size: 0.9rem; margin-bottom: 12px;">
-                    <li style="margin-bottom: 6px;"><input type="checkbox" style="margin-right: 8px; transform: scale(1.2);"> Pull previous overlap (Dining/Gangway)</li>
-                    <li style="margin-bottom: 6px;"><input type="checkbox" style="margin-right: 8px; transform: scale(1.2);"> Sort & tag incoming lab stacks</li>
-                    <li style="margin-bottom: 6px;"><input type="checkbox" style="margin-right: 8px; transform: scale(1.2);"> Hang new panels before clearance</li>
+                <ul style="list-style: none; padding: 0; font-size: 0.9rem;">
+                    <li style="margin-bottom: 8px;"><input type="checkbox" style="margin-right: 8px; transform: scale(1.2);"> Pull previous overlap (Dining/Gangway)</li>
+                    <li style="margin-bottom: 8px;"><input type="checkbox" style="margin-right: 8px; transform: scale(1.2);"> Sort & tag incoming lab stacks</li>
+                    <li style="margin-bottom: 8px;"><input type="checkbox" style="margin-right: 8px; transform: scale(1.2);"> Hang new panels before clearance</li>
                 </ul>
             </div>
 
+            <!-- TONIGHT'S BREAK MANIFEST (NEW V3) -->
+            <div class="ui-card" style="border-color: var(--accent-green);">
+                <h2 style="font-size: 1rem; color: var(--accent-green); margin-bottom: 8px;">Tonight's Break Manifest</h2>
+                <div id="dash-break-manifest" style="font-size: 0.85rem; color: var(--text-main); display: flex; flex-direction: column; gap: 6px;">
+                    <span style="color: var(--text-muted); font-size: 0.8rem; font-style: italic;">Schedule not locked yet.</span>
+                </div>
+            </div>
+
+            <!-- ACTIVE FLOOR CAPACITY -->
             <div class="ui-card">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
                     <h2 style="font-size: 1rem; color: var(--text-muted);">Active Floor Capacity</h2>
@@ -407,29 +477,29 @@
                         <strong id="dash-active-shooters" style="font-size: 1.5rem;">0</strong>
                     </div>
                     <div style="padding: 8px; background: var(--bg-elevated); border-radius: 6px; text-align: center;">
-                        <span style="display: block; font-size: 0.75rem; color: var(--text-muted);">Support / Lab / Gallery</span>
+                        <span style="display: block; font-size: 0.75rem; color: var(--text-muted);">Support / Lab</span>
                         <strong id="dash-support-units" style="font-size: 1.5rem;">0</strong>
                     </div>
                 </div>
 
                 <button id="btn-trigger-rotation" class="ui-btn ui-btn-outline" style="border-color: var(--accent-yellow); color: var(--accent-yellow);">
-                    🔄 Initiate 9:00 PM Gallery Rotation
+                    🔄 Initiate 9:00 PM Rotation
                 </button>
 
                 <div id="inline-rotation-setup" class="hidden" style="margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--border-subtle);">
                     <h3 style="font-size: 0.9rem; margin-bottom: 8px; color: var(--text-main);">Select Floor Replacements</h3>
-                    <p style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 12px;">APM and Asst. Lab Tech have moved to Support. Who is replacing them on the floor?</p>
-                    
                     <label class="ui-label">Replacement Shooter 1</label>
                     <select id="rot-shooter-1" class="ui-input"></select>
-                    
                     <label class="ui-label">Replacement Shooter 2</label>
                     <select id="rot-shooter-2" class="ui-input"></select>
-
-                    <button id="btn-confirm-rotation" class="ui-btn ui-btn-blue">Confirm Rotation & Update Floor</button>
+                    <button id="btn-confirm-rotation" class="ui-btn ui-btn-blue">Confirm & Update Floor</button>
                 </div>
             </div>
         </div>
+
+        <!-- =========================================
+             VIEW 2: ROSTER & SMART SCHEDULE
+             ========================================= -->
         <div id="view-roster" class="app-view hidden">
             
             <div class="ui-card">
@@ -437,20 +507,14 @@
                     <h2 style="font-size: 1.1rem; color: var(--text-main);">Active Roster</h2>
                     <button id="btn-show-add-crew" class="ui-btn ui-btn-blue" style="width: auto; padding: 6px 12px; font-size: 0.85rem;">+ Add Crew</button>
                 </div>
-                
-                <div id="roster-list-container" style="display: flex; flex-direction: column; gap: 8px;">
-                    <div style="text-align: center; color: var(--text-muted); padding: var(--pad-md);">
-                        Roster empty. Please add crew members.
-                    </div>
-                </div>
+                <div id="roster-list-container" style="display: flex; flex-direction: column; gap: 8px;"></div>
             </div>
 
             <div id="modal-crew-profile" class="ui-card hidden" style="border-color: var(--accent-blue);">
                 <h3 id="modal-crew-title" style="font-size: 1rem; margin-bottom: 12px; color: var(--accent-blue);">Add New Crew</h3>
-                
-                <input type="hidden" id="crew-id"> <label class="ui-label">Full Name</label>
+                <input type="hidden" id="crew-id"> 
+                <label class="ui-label">Full Name</label>
                 <input type="text" id="crew-name" class="ui-input" placeholder="e.g. John Doe">
-                
                 <label class="ui-label">Position / Role</label>
                 <select id="crew-role" class="ui-input">
                     <option value="Photographer">Photographer</option>
@@ -463,57 +527,43 @@
                     <option value="LabTechAssist">Assistant Lab Tech</option>
                     <option value="DreamsStudio">Dreams Studio</option>
                 </select>
-
                 <label class="ui-label">Cabin Number</label>
                 <input type="text" id="crew-cabin" class="ui-input" placeholder="e.g. A-123">
-
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                    <div>
-                        <label class="ui-label">Sign-On Date</label>
-                        <input type="date" id="crew-sign-on" class="ui-input">
-                    </div>
-                    <div>
-                        <label class="ui-label">Sign-Off Date</label>
-                        <input type="date" id="crew-sign-off" class="ui-input">
-                    </div>
+                    <div><label class="ui-label">Sign-On</label><input type="date" id="crew-sign-on" class="ui-input"></div>
+                    <div><label class="ui-label">Sign-Off</label><input type="date" id="crew-sign-off" class="ui-input"></div>
                 </div>
-
                 <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 8px;">
                     <button id="btn-save-crew" class="ui-btn ui-btn-blue">Save Profile</button>
-                    <button id="btn-archive-crew" class="ui-btn ui-btn-outline hidden" style="color: var(--accent-red); border-color: var(--accent-red);">Sign Off (Archive Profile)</button>
-                    <button id="btn-cancel-crew" class="ui-btn" style="background: var(--bg-input); color: var(--text-main);">Cancel</button>
+                    <button id="btn-archive-crew" class="ui-btn ui-btn-outline hidden" style="color: var(--accent-red); border-color: var(--accent-red);">Sign Off (Archive)</button>
+                    <button id="btn-cancel-crew" class="ui-btn" style="background: var(--bg-input);">Cancel</button>
                 </div>
             </div>
 
+            <!-- SMART SCHEDULE BUILDER -->
             <div class="ui-card">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
                     <h2 style="font-size: 1.1rem; color: var(--text-main);">Daily Team Schedule</h2>
                     <button id="btn-add-shift" class="ui-btn ui-btn-green" style="width: auto; padding: 6px 12px; font-size: 0.85rem;">+ Add Shift</button>
                 </div>
-                
-                <div style="font-size: 0.75rem; color: var(--text-muted); display: grid; grid-template-columns: 2fr 1fr 2fr 30px; gap: 8px; margin-bottom: 4px; padding: 0 4px;">
-                    <span>Crew Member</span>
-                    <span>Time</span>
-                    <span>Location / Backdrop</span>
-                    <span></span>
+                <div id="schedule-warning-banner" class="hidden" style="background: rgba(255, 214, 10, 0.1); border: 1px solid var(--accent-yellow); color: var(--accent-yellow); padding: 8px; border-radius: 6px; font-size: 0.8rem; margin-bottom: 12px;">
+                    <!-- Dynamic warnings (e.g. >2 on break) inject here -->
                 </div>
-
-                <div id="schedule-grid-container" style="display: flex; flex-direction: column; gap: 8px;">
-                    <div id="schedule-empty-state" style="text-align: center; color: var(--text-muted); padding: var(--pad-sm);">
-                        No shifts scheduled for today.
+                <div id="schedule-grid-container" style="display: flex; flex-direction: column; gap: 12px;">
+                    <div id="schedule-empty-state" style="text-align: center; color: var(--text-muted); font-size: 0.85rem; padding: var(--pad-sm);">
+                        No shifts scheduled.
                     </div>
                 </div>
-
                 <button id="btn-save-schedule" class="ui-btn ui-btn-green" style="margin-top: 16px;">Lock Today's Schedule</button>
             </div>
-
         </div>
+
+        <!-- =========================================
+             VIEW 3: SPACE (LOGISTICS)
+             ========================================= -->
         <div id="view-space" class="app-view hidden">
-            
             <div class="ui-card">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                    <h2 style="font-size: 1.1rem; color: var(--text-main);">Space & Real Estate Math</h2>
-                </div>
+                <h2 style="font-size: 1.1rem; color: var(--text-main); margin-bottom: 8px;">Gallery Space Engine</h2>
                 <p style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 16px;">Calculate required gallery panels based on physical production counts.</p>
 
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px;">
@@ -549,15 +599,7 @@
                     <span></span>
                 </div>
 
-                <div id="space-grid-container" style="display: flex; flex-direction: column; gap: 8px;">
-                    <div class="space-calc-row" style="display: grid; grid-template-columns: 2fr 1.2fr 1.2fr 30px; gap: 6px; align-items: center;">
-                        <select class="ui-input space-photographer" style="margin-bottom: 0; padding: 8px 4px; font-size: 0.85rem;"></select>
-                        <input type="number" class="ui-input space-total-pics" inputmode="numeric" placeholder="Qty" style="margin-bottom: 0; padding: 8px 4px; text-align: center;">
-                        <input type="number" class="ui-input space-pics-per-session" inputmode="numeric" placeholder="Avg" style="margin-bottom: 0; padding: 8px 4px; text-align: center;">
-                        <button class="btn-remove-space-row" style="background: none; border: none; color: var(--accent-red); font-size: 1rem; padding: 4px; cursor: pointer;">✕</button>
-                    </div>
-                </div>
-
+                <div id="space-grid-container" style="display: flex; flex-direction: column; gap: 8px;"></div>
                 <button id="btn-calculate-space" class="ui-btn ui-btn-yellow" style="margin-top: 16px;">Calculate Panels Needed</button>
 
                 <div id="space-output-display" class="hidden" style="margin-top: 16px; padding: 12px; background: var(--bg-elevated); border-radius: 8px; border: 1px solid var(--accent-yellow);">
@@ -575,34 +617,39 @@
                     </div>
                 </div>
             </div>
-
         </div>
+
+        <!-- =========================================
+             VIEW 4: EOD CLOSURE (CONTEXTUAL)
+             ========================================= -->
         <div id="view-eod" class="app-view hidden">
             
+            <div id="eod-context-card" class="ui-card" style="border-color: var(--accent-blue); margin-bottom: 12px;">
+                <h3 id="eod-cruise-day" style="font-size: 1.1rem; color: var(--accent-blue);">Awaiting Active Voyage</h3>
+                <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 8px; margin-top: 4px;">Target Gap: <strong id="eod-target-gap" style="color: var(--text-main);">$0.00</strong> needed</div>
+                <div style="font-size: 0.85rem; color: var(--text-muted);">Voyage PRYR: <strong id="eod-pryr-display" style="color: var(--text-main);">$0.00</strong></div>
+                <hr style="border: 0; border-top: 1px dashed var(--border-subtle); margin: 12px 0;">
+                <div id="eod-ledger-mini" style="font-size: 0.8rem; color: var(--text-muted); display: flex; flex-direction: column; gap: 4px;">
+                    <!-- Ledger injected here -->
+                </div>
+            </div>
+
             <div class="ui-card">
-                <h2 style="font-size: 1.1rem; color: var(--text-main); margin-bottom: 8px;">Daily Financial Closure</h2>
-                <p style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 16px;">Lock in tonight's revenue to update the Cumulative and DS GCD pacing.</p>
-                
+                <h2 style="font-size: 1.1rem; color: var(--text-main); margin-bottom: 12px;">Input Tonight's Revenue</h2>
                 <label class="ui-label">Total Ship Revenue ($)</label>
                 <input type="number" id="eod-total-revenue" class="ui-input" inputmode="decimal" placeholder="e.g. 14500.00">
-                
                 <label class="ui-label">Dreams Studio (DS) Revenue ($)</label>
                 <input type="number" id="eod-ds-revenue" class="ui-input" inputmode="decimal" placeholder="e.g. 3200.00">
-                
-                <button id="btn-save-revenue" class="ui-btn ui-btn-green" style="margin-top: 8px;">
-                    Lock Revenue & Update GCD
-                </button>
+                <button id="btn-save-revenue" class="ui-btn ui-btn-green" style="margin-top: 8px;">Lock Revenue & Update Pacing</button>
             </div>
-            
         </div>
 
+        <!-- =========================================
+             VIEW 5: INVENTORY
+             ========================================= -->
         <div id="view-inventory" class="app-view hidden">
-            
             <div class="ui-card" style="border-color: var(--accent-blue);">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                    <h2 style="font-size: 1.1rem; color: var(--accent-blue);">Inventory Engine</h2>
-                </div>
-                
+                <h2 style="font-size: 1.1rem; color: var(--accent-blue); margin-bottom: 12px;">Inventory Engine</h2>
                 <div style="display: grid; grid-template-columns: 1fr 1.5fr; gap: 10px;">
                     <div>
                         <label class="ui-label">Category</label>
@@ -615,66 +662,43 @@
                     </div>
                     <div>
                         <label class="ui-label">Item Name</label>
-                        <input type="text" id="inv-name" class="ui-input" placeholder="e.g. 8x10 Paper Box">
+                        <input type="text" id="inv-name" class="ui-input" placeholder="e.g. 8x10 Paper">
                     </div>
                 </div>
-
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                    <div>
-                        <label class="ui-label">Current Stock</label>
-                        <input type="number" id="inv-stock" class="ui-input" inputmode="numeric" placeholder="Qty">
-                    </div>
-                    <div>
-                        <label class="ui-label">Par Level (Optional)</label>
-                        <input type="number" id="inv-par" class="ui-input" inputmode="numeric" placeholder="Target Qty">
-                    </div>
+                    <div><label class="ui-label">Stock</label><input type="number" id="inv-stock" class="ui-input" inputmode="numeric"></div>
+                    <div><label class="ui-label">Par Target</label><input type="number" id="inv-par" class="ui-input" inputmode="numeric"></div>
                 </div>
-
-                <button id="btn-save-inventory" class="ui-btn ui-btn-blue" style="margin-top: 8px;">Log Item & Run Math</button>
+                <button id="btn-save-inventory" class="ui-btn ui-btn-blue" style="margin-top: 8px;">Log Item</button>
             </div>
-
             <div class="ui-card">
                 <h3 style="font-size: 0.9rem; color: var(--text-main); margin-bottom: 12px;">Stock Status</h3>
-                
-                <div id="inventory-list-container" style="display: flex; flex-direction: column; gap: 8px;">
-                    <div style="text-align: center; color: var(--text-muted); padding: var(--pad-md); font-size: 0.85rem;">
-                        No items tracked. Add inventory above to begin predictive burn rate tracking.
-                    </div>
-                </div>
+                <div id="inventory-list-container" style="display: flex; flex-direction: column; gap: 8px;"></div>
             </div>
-
         </div>
+    </main> 
 
-    </main> <nav id="bottom-nav">
-        <button class="nav-btn active" id="nav-dashboard">
-            <span style="font-size: 1.3rem;">📊</span>
-            Dashboard
-        </button>
-        <button class="nav-btn" id="nav-roster">
-            <span style="font-size: 1.3rem;">👥</span>
-            Roster
-        </button>
-        <button class="nav-btn" id="nav-space">
-            <span style="font-size: 1.3rem;">📐</span>
-            Logistics
-        </button>
-        <button class="nav-btn" id="nav-eod">
-            <span style="font-size: 1.3rem;">💰</span>
-            Closure
-        </button>
-        <button class="nav-btn" id="nav-inventory">
-            <span style="font-size: 1.3rem;">📦</span>
-            Inventory
-        </button>
+    <!-- =========================================
+         BOTTOM NAVIGATION
+         ========================================= -->
+    <nav id="bottom-nav">
+        <button class="nav-btn active" id="nav-dashboard"><span style="font-size: 1.3rem;">📊</span>Dashboard</button>
+        <button class="nav-btn" id="nav-roster"><span style="font-size: 1.3rem;">👥</span>Roster</button>
+        <button class="nav-btn" id="nav-space"><span style="font-size: 1.3rem;">📐</span>Logistics</button>
+        <button class="nav-btn" id="nav-eod"><span style="font-size: 1.3rem;">💰</span>Closure</button>
+        <button class="nav-btn" id="nav-inventory"><span style="font-size: 1.3rem;">📦</span>Inventory</button>
     </nav>
 
+    <!-- =========================================
+         JAVASCRIPT ENGINE
+         ========================================= -->
     <script>
         // ==========================================
-        // 1. DATABASE ARCHITECTURE (IndexedDB V2)
+        // 1. DATABASE ARCHITECTURE (V3 SCHEMA)
         // ==========================================
         
         const DB_NAME = 'universal_apm_engine';
-        const DB_VERSION = 2; // Strict bump to clear Phase 1 schema
+        const DB_VERSION = 3; // Forces wipe of old V2 data to accommodate Month/Voyage targets
         let dbInstance = null;
 
         const db = {
@@ -684,50 +708,55 @@
                     
                     request.onupgradeneeded = (event) => {
                         const database = event.target.result;
-                        console.log('[DB] Initializing Storage Schema V2...');
+                        console.log('[DB] Initializing Storage Schema V3...');
                         
-                        // 1. Master Contract Engine (Highest Level)
+                        // Delete obsolete tables if upgrading directly from an older internal version
+                        if (database.objectStoreNames.contains('contracts')) database.deleteObjectStore('contracts');
+                        if (database.objectStoreNames.contains('voyages')) database.deleteObjectStore('voyages');
+                        
+                        // Rebuild with V3 Architecture
+                        // 1. Contract Profile (Just Ship & Mode now)
                         if (!database.objectStoreNames.contains('contracts')) {
                             const contractStore = database.createObjectStore('contracts', { keyPath: 'id' });
-                            contractStore.createIndex('status', 'status', { unique: false }); // 'active' or 'archived'
+                            contractStore.createIndex('status', 'status', { unique: false });
+                        }
+
+                        // 2. Monthly Financial Targets (NEW)
+                        if (!database.objectStoreNames.contains('months')) {
+                            // keyPath is 'YYYY-MM' (e.g., '2026-08')
+                            database.createObjectStore('months', { keyPath: 'id' });
                         }
                         
-                        // 2. Voyage Builder & Itineraries
+                        // 3. Voyages (Now holds individual targets and PRYR)
                         if (!database.objectStoreNames.contains('voyages')) {
                             const voyageStore = database.createObjectStore('voyages', { keyPath: 'voyageId' });
-                            voyageStore.createIndex('contractId', 'contractId', { unique: false });
-                            voyageStore.createIndex('status', 'status', { unique: false }); // 'active' or 'completed'
+                            voyageStore.createIndex('status', 'status', { unique: false }); // pending, active, completed
+                            voyageStore.createIndex('monthId', 'monthId', { unique: false }); // links to months table
                         }
+                        
+                        // 4. Itineraries
                         if (!database.objectStoreNames.contains('itineraries')) {
-                            // Compound ID: voyageId_dayNumber
-                            const itineraryStore = database.createObjectStore('itineraries', { keyPath: 'id' });
+                            const itineraryStore = database.createObjectStore('itineraries', { keyPath: 'id' }); // ID: voyageId_date
                             itineraryStore.createIndex('voyageId', 'voyageId', { unique: false });
                         }
                         
-                        // 3. Human Capital (Roster & Shifts)
+                        // 5. Human Capital
                         if (!database.objectStoreNames.contains('roster')) {
                             const rosterStore = database.createObjectStore('roster', { keyPath: 'id', autoIncrement: true });
-                            rosterStore.createIndex('status', 'status', { unique: false }); // 'active' or 'archived'
+                            rosterStore.createIndex('status', 'status', { unique: false });
                         }
                         if (!database.objectStoreNames.contains('schedules')) {
-                            const scheduleStore = database.createObjectStore('schedules', { keyPath: 'id', autoIncrement: true });
-                            scheduleStore.createIndex('date', 'date', { unique: false });
+                            const scheduleStore = database.createObjectStore('schedules', { keyPath: 'date' }); // Date is unique PK
                         }
                         
-                        // 4. Logistics (Gallery Blueprint)
+                        // 6. Logistics & Revenue
                         if (!database.objectStoreNames.contains('gallery_config')) {
-                            // keyPath is the panelType (A, B, C)
                             database.createObjectStore('gallery_config', { keyPath: 'panelType' });
                         }
-                        
-                        // 5. Financial Pacing (EOD Revenue)
                         if (!database.objectStoreNames.contains('daily_revenue')) {
-                            // Compound ID: voyageId_date
-                            const revenueStore = database.createObjectStore('daily_revenue', { keyPath: 'id' });
+                            const revenueStore = database.createObjectStore('daily_revenue', { keyPath: 'id' }); // voyageId_date
                             revenueStore.createIndex('voyageId', 'voyageId', { unique: false });
                         }
-                        
-                        // 6. Smart Inventory
                         if (!database.objectStoreNames.contains('inventory')) {
                             const inventoryStore = database.createObjectStore('inventory', { keyPath: 'id', autoIncrement: true });
                             inventoryStore.createIndex('category', 'category', { unique: false });
@@ -736,7 +765,7 @@
 
                     request.onsuccess = (event) => {
                         dbInstance = event.target.result;
-                        console.log('[DB] Storage Engine V2 Online');
+                        console.log('[DB] Storage Engine V3 Online');
                         resolve(dbInstance);
                     };
 
@@ -748,7 +777,6 @@
             },
 
             // --- Async Helper Methods ---
-            
             put: function(storeName, data) {
                 return new Promise((resolve, reject) => {
                     const transaction = dbInstance.transaction([storeName], 'readwrite');
@@ -758,7 +786,6 @@
                     request.onerror = (e) => reject(e.target.error);
                 });
             },
-
             get: function(storeName, key) {
                 return new Promise((resolve, reject) => {
                     const transaction = dbInstance.transaction([storeName], 'readonly');
@@ -768,7 +795,6 @@
                     request.onerror = (e) => reject(e.target.error);
                 });
             },
-
             getAll: function(storeName) {
                 return new Promise((resolve, reject) => {
                     const transaction = dbInstance.transaction([storeName], 'readonly');
@@ -778,7 +804,6 @@
                     request.onerror = (e) => reject(e.target.error);
                 });
             },
-
             getAllByIndex: function(storeName, indexName, value) {
                 return new Promise((resolve, reject) => {
                     const transaction = dbInstance.transaction([storeName], 'readonly');
@@ -789,12 +814,20 @@
                     request.onerror = (e) => reject(e.target.error);
                 });
             },
-            
             delete: function(storeName, key) {
                 return new Promise((resolve, reject) => {
                     const transaction = dbInstance.transaction([storeName], 'readwrite');
                     const store = transaction.objectStore(storeName);
                     const request = store.delete(key);
+                    request.onsuccess = () => resolve();
+                    request.onerror = (e) => reject(e.target.error);
+                });
+            },
+            clearStore: function(storeName) {
+                return new Promise((resolve, reject) => {
+                    const transaction = dbInstance.transaction([storeName], 'readwrite');
+                    const store = transaction.objectStore(storeName);
+                    const request = store.clear();
                     request.onsuccess = () => resolve();
                     request.onerror = (e) => reject(e.target.error);
                 });
@@ -807,7 +840,7 @@
         let appState = {
             contractId: null,
             voyageId: null,
-            mode: 'print' // Defaults to print, updates dynamically
+            mode: 'print'
         };
 
         const views = {
@@ -830,200 +863,597 @@
                 
                 const targetId = targetBtn.id.replace('nav-', 'view-');
                 document.getElementById(targetId).classList.remove('hidden');
+                
+                // Specific View Triggers
+                if (targetId === 'view-eod') renderContextualEOD();
+                if (targetId === 'view-dashboard') renderDashboardBreakManifest();
             });
         });
 
         // Settings Modal Toggles
         document.getElementById('btn-open-settings').addEventListener('click', () => {
+            renderPendingVoyages();
             document.getElementById('modal-settings').classList.remove('hidden');
         });
         document.getElementById('btn-close-settings').addEventListener('click', () => {
             document.getElementById('modal-settings').classList.add('hidden');
         });
 
-        // Hide/Show App Elements Based on Print vs Digital Mode
+        // Mode Firewall
         function applyModeFirewall(mode) {
             appState.mode = mode;
             const spaceNavBtn = document.getElementById('nav-space');
             const gallerySetupCard = document.getElementById('dash-gallery-setup');
-            const configGallerySec = document.getElementById('config-gallery-section');
+            const demoBadge = document.getElementById('demo-mode-badge');
 
             if (mode === 'digital') {
                 if(spaceNavBtn) spaceNavBtn.classList.add('hidden');
                 if(gallerySetupCard) gallerySetupCard.classList.add('hidden');
-                if(configGallerySec) configGallerySec.classList.add('hidden');
+                if(demoBadge) demoBadge.classList.remove('hidden');
             } else {
                 if(spaceNavBtn) spaceNavBtn.classList.remove('hidden');
                 if(gallerySetupCard) gallerySetupCard.classList.remove('hidden');
-                if(configGallerySec) configGallerySec.classList.remove('hidden');
+                if(demoBadge) demoBadge.classList.add('hidden');
             }
         }
 
         // ==========================================
-        // 3. MASTER CONTRACT & VOYAGE BUILDER
+        // 3. SYSTEM DATA MANAGEMENT (Backup/Restore)
+        // ==========================================
+
+        document.getElementById('btn-export-backup').addEventListener('click', async () => {
+            try {
+                const dump = {
+                    version: DB_VERSION,
+                    timestamp: new Date().toISOString(),
+                    contracts: await db.getAll('contracts'),
+                    months: await db.getAll('months'),
+                    voyages: await db.getAll('voyages'),
+                    itineraries: await db.getAll('itineraries'),
+                    roster: await db.getAll('roster'),
+                    schedules: await db.getAll('schedules'),
+                    gallery_config: await db.getAll('gallery_config'),
+                    daily_revenue: await db.getAll('daily_revenue'),
+                    inventory: await db.getAll('inventory')
+                };
+
+                const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(dump));
+                const downloadAnchorNode = document.createElement('a');
+                downloadAnchorNode.setAttribute("href", dataStr);
+                downloadAnchorNode.setAttribute("download", `APM_Backup_${new Date().toISOString().split('T')[0]}.json`);
+                document.body.appendChild(downloadAnchorNode); // required for firefox
+                downloadAnchorNode.click();
+                downloadAnchorNode.remove();
+            } catch (err) {
+                console.error('Export failed:', err);
+                alert('Failed to export database.');
+            }
+        });
+
+        document.getElementById('input-restore-backup').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = async (event) => {
+                try {
+                    const data = JSON.parse(event.target.result);
+                    if (!confirm('WARNING: This will overwrite your current app data entirely. Proceed?')) return;
+                    
+                    const stores = ['contracts', 'months', 'voyages', 'itineraries', 'roster', 'schedules', 'gallery_config', 'daily_revenue', 'inventory'];
+                    
+                    for (const store of stores) {
+                        await db.clearStore(store);
+                        if (data[store]) {
+                            for (const record of data[store]) {
+                                await db.put(store, record);
+                            }
+                        }
+                    }
+                    alert('Backup restored successfully. App will now reload.');
+                    window.location.reload();
+                } catch (err) {
+                    console.error('Restore failed:', err);
+                    alert('Invalid JSON backup file.');
+                }
+            };
+            reader.readAsText(file);
+        });
+
+        document.getElementById('btn-execute-reset').addEventListener('click', async () => {
+            if (confirm('CRITICAL WARNING: This will permanently delete all data in the app. This cannot be undone unless you have a backup. Proceed?')) {
+                const stores = ['contracts', 'months', 'voyages', 'itineraries', 'roster', 'schedules', 'gallery_config', 'daily_revenue', 'inventory'];
+                for (const store of stores) {
+                    await db.clearStore(store);
+                }
+                alert('Database wiped. App will now reload.');
+                window.location.reload();
+            }
+        });
+
+        // ==========================================
+        // 4. MASTER CONTRACT & VOYAGE INGESTION
         // ==========================================
         
-        // A. Save Contract Config
+        // A. Save Master Contract
         document.getElementById('btn-save-contract').addEventListener('click', async () => {
             const shipName = document.getElementById('cfg-ship-name').value.trim();
             const mode = document.getElementById('cfg-op-mode').value;
             const signOn = document.getElementById('cfg-sign-on').value;
             const signOff = document.getElementById('cfg-sign-off').value;
-            const targetGcd = parseFloat(document.getElementById('cfg-target-gcd').value);
-            const pryrGcd = parseFloat(document.getElementById('cfg-pryr-gcd').value);
 
-            if (!shipName || !signOn || !signOff || isNaN(targetGcd)) {
-                return alert('Please complete core contract fields.');
-            }
+            if (!shipName || !signOn || !signOff) return alert('Please complete core contract fields.');
 
-            const contractId = `CT_${shipName.replace(/\s+/g, '').toUpperCase()}_${signOn.replace(/-/g, '')}`;
+            const contractId = `CT_${shipName.replace(/\s+/g, '').toUpperCase()}`;
             
-            const contractData = {
+            await db.put('contracts', {
                 id: contractId,
                 shipName,
                 mode,
                 signOn,
                 signOff,
-                targetGcd,
-                pryrGcd,
                 status: 'active'
+            });
+
+            appState.contractId = contractId;
+            applyModeFirewall(mode);
+            document.getElementById('header-voyage-id').innerText = `${shipName} - ${mode.toUpperCase()}`;
+            alert('Contract Locked.');
+        });
+
+        // B. Bulk JSON Ingestion
+        document.getElementById('btn-ingest-json').addEventListener('click', async () => {
+            if (!appState.contractId) return alert('Lock Contract Setup first.');
+            
+            const jsonStr = document.getElementById('cfg-json-input').value.trim();
+            if (!jsonStr) return alert('Paste JSON data first.');
+
+            try {
+                const voyagesArray = JSON.parse(jsonStr);
+                if (!Array.isArray(voyagesArray)) throw new Error('JSON must be an array.');
+
+                for (const vData of voyagesArray) {
+                    // Extract Month ID (YYYY-MM) strictly from the End Date (Disembarkation logic)
+                    const monthId = vData.endDate.substring(0, 7);
+
+                    await db.put('voyages', {
+                        voyageId: vData.voyageId,
+                        contractId: appState.contractId,
+                        startDate: vData.startDate,
+                        endDate: vData.endDate,
+                        length: vData.length,
+                        monthId: monthId,
+                        status: 'pending', // Awaiting manual activation
+                        guests: null,
+                        targetGcd: null,
+                        pryrGcd: null
+                    });
+
+                    // Loop Itinerary
+                    for (let i = 0; i < vData.itinerary.length; i++) {
+                        const day = vData.itinerary[i];
+                        const isSea = day.port.toLowerCase().includes('sea');
+                        
+                        await db.put('itineraries', {
+                            id: `${vData.voyageId}_${day.date}`,
+                            voyageId: vData.voyageId,
+                            date: day.date,
+                            dayNumber: i + 1,
+                            portName: day.port,
+                            type: isSea ? 'sea' : 'port',
+                            arrival: '',
+                            allAboard: '',
+                            gangway: '',
+                            elegant: false
+                        });
+                    }
+                }
+                
+                document.getElementById('cfg-json-input').value = '';
+                alert(`Successfully ingested ${voyagesArray.length} voyages.`);
+                await renderPendingVoyages();
+
+            } catch (error) {
+                console.error('JSON Parse Error:', error);
+                alert('Invalid JSON format. Please ensure it perfectly matches the matrix structure.');
+            }
+        });
+
+        // C. Render Pending Voyages List
+        async function renderPendingVoyages() {
+            if (!appState.contractId) return;
+            
+            const list = document.getElementById('pending-voyages-list');
+            const allVoyages = await db.getAllByIndex('voyages', 'status', 'pending');
+            
+            list.innerHTML = '';
+            
+            if (allVoyages.length === 0) {
+                list.innerHTML = '<div style="font-size: 0.75rem; color: var(--text-muted); text-align: center;">No pending voyages.</div>';
+                return;
+            }
+
+            // Sort chronologically
+            allVoyages.sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
+
+            allVoyages.forEach(v => {
+                const row = document.createElement('div');
+                row.style.cssText = 'display: flex; justify-content: space-between; align-items: center; background: var(--bg-input); padding: 8px; border-radius: 6px;';
+                row.innerHTML = `
+                    <div>
+                        <div style="font-size: 0.85rem; color: var(--text-main); font-weight: bold;">${v.voyageId}</div>
+                        <div style="font-size: 0.7rem; color: var(--text-muted);">${v.startDate} to ${v.endDate}</div>
+                    </div>
+                    <button class="btn-trigger-activate ui-btn ui-btn-outline" data-vid="${v.voyageId}" style="width: auto; padding: 4px 8px; font-size: 0.75rem;">Activate</button>
+                `;
+                
+                row.querySelector('.btn-trigger-activate').addEventListener('click', (e) => triggerVoyageActivation(e.target.dataset.vid));
+                list.appendChild(row);
+            });
+        }
+
+        // D. Manual Voyage Entry Toggle
+        document.getElementById('btn-show-manual-voyage').addEventListener('click', () => {
+            document.getElementById('manual-voyage-builder').classList.toggle('hidden');
+        });
+
+        document.getElementById('btn-save-manual-voyage').addEventListener('click', async () => {
+            const vid = document.getElementById('cfg-manual-vid').value.trim();
+            const start = document.getElementById('cfg-manual-start').value;
+            const end = document.getElementById('cfg-manual-end').value;
+            
+            if (!vid || !start || !end) return alert('Complete all manual voyage fields.');
+            
+            const monthId = end.substring(0, 7);
+            
+            await db.put('voyages', {
+                voyageId: vid,
+                contractId: appState.contractId,
+                startDate: start,
+                endDate: end,
+                length: null, // Left null for manual
+                monthId: monthId,
+                status: 'pending',
+                guests: null,
+                targetGcd: null,
+                pryrGcd: null
+            });
+            
+            document.getElementById('manual-voyage-builder').classList.add('hidden');
+            await renderPendingVoyages();
+        });
+
+        // ==========================================
+        // 5. VOYAGE ACTIVATION LIFECYCLE
+        // ==========================================
+        
+        let pendingActivationVid = null;
+
+        async function triggerVoyageActivation(voyageId) {
+            pendingActivationVid = voyageId;
+            const voyage = await db.get('voyages', voyageId);
+            
+            document.getElementById('act-voyage-title').innerText = voyageId;
+            
+            // Check if Month Target exists
+            const monthRecord = await db.get('months', voyage.monthId);
+            const monthWrapper = document.getElementById('act-monthly-target-wrapper');
+            const monthInput = document.getElementById('act-monthly-target');
+            
+            if (!monthRecord) {
+                // First cruise of the month - prompt for corporate target
+                monthWrapper.classList.remove('hidden');
+                monthInput.value = '';
+            } else {
+                monthWrapper.classList.add('hidden');
+            }
+
+            // Clear voyage inputs
+            document.getElementById('act-guests').value = '';
+            document.getElementById('act-target-gcd').value = '';
+            document.getElementById('act-pryr-gcd').value = '';
+
+            document.getElementById('modal-activate-voyage').classList.remove('hidden');
+        }
+
+        document.getElementById('btn-cancel-activation').addEventListener('click', () => {
+            document.getElementById('modal-activate-voyage').classList.add('hidden');
+            pendingActivationVid = null;
+        });
+
+        document.getElementById('btn-confirm-activation').addEventListener('click', async () => {
+            if (!pendingActivationVid) return;
+            
+            const voyage = await db.get('voyages', pendingActivationVid);
+            const guests = parseInt(document.getElementById('act-guests').value);
+            const targetGcd = parseFloat(document.getElementById('act-target-gcd').value);
+            const pryrGcd = parseFloat(document.getElementById('act-pryr-gcd').value);
+            
+            if (isNaN(guests) || isNaN(targetGcd)) return alert('Guest count and Target GCD are required.');
+
+            const monthWrapper = document.getElementById('act-monthly-target-wrapper');
+            if (!monthWrapper.classList.contains('hidden')) {
+                const monthTarget = parseFloat(document.getElementById('act-monthly-target').value);
+                if (isNaN(monthTarget)) return alert('Monthly Target is required for a new financial month.');
+                
+                await db.put('months', {
+                    id: voyage.monthId,
+                    targetGcd: monthTarget
+                });
+            }
+
+            // 1. Mark currently active voyage as completed
+            const allVoyages = await db.getAll('voyages');
+            const currentActive = allVoyages.find(v => v.status === 'active');
+            if (currentActive) {
+                currentActive.status = 'completed';
+                await db.put('voyages', currentActive);
+            }
+
+            // 2. Activate new voyage
+            voyage.guests = guests;
+            voyage.targetGcd = targetGcd;
+            voyage.pryrGcd = !isNaN(pryrGcd) ? pryrGcd : null;
+            voyage.status = 'active';
+            
+            await db.put('voyages', voyage);
+            
+            appState.voyageId = voyage.voyageId;
+            
+            document.getElementById('modal-activate-voyage').classList.add('hidden');
+            document.getElementById('modal-settings').classList.add('hidden');
+            
+            alert(`Voyage ${voyage.voyageId} is now live.`);
+            
+            if (typeof updateDashboardGCD === 'function') await updateDashboardGCD();
+        });
+        // ==========================================
+        // 6. DASHBOARD PACING & CONTEXTUAL EOD
+        // ==========================================
+
+        async function updateDashboardGCD() {
+            if (!appState.voyageId) return;
+
+            try {
+                const activeVoyage = await db.get('voyages', appState.voyageId);
+                if (!activeVoyage || !activeVoyage.guests) return;
+
+                const allRevenue = await db.getAllByIndex('daily_revenue', 'voyageId', appState.voyageId);
+                
+                // --- 1. CURRENT VOYAGE PACING ---
+                let voyageShipRev = 0;
+                let voyageDsRev = 0;
+
+                allRevenue.forEach(day => {
+                    voyageShipRev += day.shipRevenue;
+                    voyageDsRev += day.dsRevenue;
+                });
+
+                const voyageActualGcd = (voyageShipRev / activeVoyage.guests);
+                const voyageDsGcd = (voyageDsRev / activeVoyage.guests);
+
+                document.getElementById('dash-actual-gcd').innerText = `$${voyageActualGcd.toFixed(2)}`;
+                document.getElementById('dash-target-gcd').innerText = `$${activeVoyage.targetGcd.toFixed(2)}`;
+                document.getElementById('dash-ds-gcd').innerText = `$${voyageDsGcd.toFixed(2)}`;
+                document.getElementById('dash-ds-rev').innerText = `$${voyageDsRev.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+
+                const varBox = document.getElementById('dash-gcd-variance');
+                if (allRevenue.length === 0) {
+                    varBox.innerText = 'Awaiting Revenue Data';
+                    varBox.style.cssText = 'margin-top: 12px; padding: 6px; border-radius: 4px; text-align: center; font-size: 0.85rem; font-weight: bold; background: var(--bg-input); color: var(--text-muted);';
+                } else if (voyageActualGcd >= activeVoyage.targetGcd) {
+                    varBox.innerText = `OVER TARGET (+ $${(voyageActualGcd - activeVoyage.targetGcd).toFixed(2)})`;
+                    varBox.style.cssText = 'margin-top: 12px; padding: 6px; border-radius: 4px; text-align: center; font-size: 0.85rem; font-weight: bold; background: var(--accent-green); color: #000;';
+                } else {
+                    const variance = activeVoyage.targetGcd - voyageActualGcd;
+                    if (variance <= 0.50) {
+                        varBox.innerText = `APPROACHING (- $${variance.toFixed(2)})`;
+                        varBox.style.cssText = 'margin-top: 12px; padding: 6px; border-radius: 4px; text-align: center; font-size: 0.85rem; font-weight: bold; background: var(--accent-yellow); color: #000;';
+                    } else {
+                        varBox.innerText = `DEFICIT (- $${variance.toFixed(2)})`;
+                        varBox.style.cssText = 'margin-top: 12px; padding: 6px; border-radius: 4px; text-align: center; font-size: 0.85rem; font-weight: bold; background: var(--accent-red); color: #fff;';
+                    }
+                }
+
+                const statusBadge = document.getElementById('dash-voyage-status');
+                statusBadge.innerText = activeVoyage.voyageId;
+                statusBadge.style.color = '#000';
+                statusBadge.style.background = 'var(--accent-green)';
+
+                // --- 2. MONTHLY CORPORATE PACING ---
+                if (activeVoyage.monthId) {
+                    const monthRecord = await db.get('months', activeVoyage.monthId);
+                    if (monthRecord && monthRecord.targetGcd) {
+                        
+                        const allVoyages = await db.getAll('voyages');
+                        const monthVoyages = allVoyages.filter(v => v.monthId === activeVoyage.monthId && (v.status === 'active' || v.status === 'completed'));
+                        
+                        let totalMonthRev = 0;
+                        let totalMonthGuests = 0;
+
+                        for (const v of monthVoyages) {
+                            if (v.guests) totalMonthGuests += v.guests;
+                            const vRev = await db.getAllByIndex('daily_revenue', 'voyageId', v.voyageId);
+                            vRev.forEach(r => totalMonthRev += r.shipRevenue);
+                        }
+
+                        const monthActualGcd = totalMonthGuests > 0 ? (totalMonthRev / totalMonthGuests) : 0;
+                        document.getElementById('dash-month-actual').innerText = `$${monthActualGcd.toFixed(2)}`;
+                        document.getElementById('dash-month-target').innerText = `Target: $${monthRecord.targetGcd.toFixed(2)}`;
+
+                        let progressPct = (monthActualGcd / monthRecord.targetGcd) * 100;
+                        if (progressPct > 100) progressPct = 100;
+                        
+                        const progBar = document.getElementById('dash-month-progress');
+                        progBar.style.width = `${progressPct}%`;
+                        
+                        // Dynamic colorization
+                        if (progressPct >= 100) progBar.style.background = 'var(--accent-green)';
+                        else if (progressPct >= 90) progBar.style.background = 'var(--accent-yellow)';
+                        else progBar.style.background = 'var(--accent-blue)';
+                    }
+                }
+
+                // --- 3. GANGWAY TIME CALCULATION ---
+                const today = new Date().toISOString().split('T')[0];
+                const itineraryDays = await db.getAllByIndex('itineraries', 'voyageId', appState.voyageId);
+                const nextPortDay = itineraryDays.find(day => day.date >= today && day.type === 'port' && day.gangway);
+                
+                if (nextPortDay && nextPortDay.gangway) {
+                    document.getElementById('dash-gangway-time').innerText = `Gangway: ${nextPortDay.gangway}`;
+                } else {
+                    document.getElementById('dash-gangway-time').innerText = 'Gangway: N/A';
+                }
+
+            } catch (error) {
+                console.error('Failed to calculate GCD:', error);
+            }
+        }
+
+        async function renderContextualEOD() {
+            if (!appState.voyageId) return;
+
+            try {
+                const activeVoyage = await db.get('voyages', appState.voyageId);
+                if (!activeVoyage) return;
+
+                const today = new Date().toISOString().split('T')[0];
+                const itineraryDays = await db.getAllByIndex('itineraries', 'voyageId', appState.voyageId);
+                
+                // Identify Current Day & Port
+                const todayItinerary = itineraryDays.find(d => d.date === today);
+                let dayText = `Day ? of ${itineraryDays.length}`;
+                if (todayItinerary) {
+                    dayText = `Day ${todayItinerary.dayNumber} of ${itineraryDays.length} - ${todayItinerary.portName}`;
+                } else if (itineraryDays.length > 0) {
+                    dayText = `Active Cruise: ${activeVoyage.voyageId}`;
+                }
+                
+                document.getElementById('eod-cruise-day').innerText = dayText;
+                document.getElementById('eod-pryr-display').innerText = activeVoyage.pryrGcd ? `$${activeVoyage.pryrGcd.toFixed(2)}` : 'N/A';
+
+                // Calculate Target Gap
+                const allRevenue = await db.getAllByIndex('daily_revenue', 'voyageId', appState.voyageId);
+                let currentShipRev = 0;
+                allRevenue.forEach(day => currentShipRev += day.shipRevenue);
+                
+                const targetRev = activeVoyage.guests * activeVoyage.targetGcd;
+                const gap = targetRev - currentShipRev;
+                
+                const gapEl = document.getElementById('eod-target-gap');
+                if (gap <= 0) {
+                    gapEl.innerText = 'TARGET ACHIEVED';
+                    gapEl.style.color = 'var(--accent-green)';
+                } else {
+                    gapEl.innerText = `$${gap.toLocaleString(undefined, {minimumFractionDigits: 2})} needed`;
+                    gapEl.style.color = 'var(--accent-yellow)';
+                }
+
+                // Render EOD Mini-Ledger
+                const ledgerBox = document.getElementById('eod-ledger-mini');
+                ledgerBox.innerHTML = '';
+                
+                if (allRevenue.length === 0) {
+                    ledgerBox.innerHTML = '<span>No revenue logged yet.</span>';
+                } else {
+                    allRevenue.sort((a, b) => new Date(a.date) - new Date(b.date));
+                    allRevenue.forEach((r, index) => {
+                        const matchDay = itineraryDays.find(d => d.date === r.date);
+                        const portTag = matchDay ? matchDay.portName : `Day ${index + 1}`;
+                        
+                        ledgerBox.innerHTML += `
+                            <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--border-subtle); padding-bottom: 4px; padding-top: 4px;">
+                                <span>${r.date.substring(5)} (${portTag})</span>
+                                <strong>$${r.shipRevenue.toLocaleString(undefined, {minimumFractionDigits: 2})}</strong>
+                            </div>
+                        `;
+                    });
+                }
+
+            } catch (error) {
+                console.error('Failed to render EOD context:', error);
+            }
+        }
+
+        // Save Daily Revenue Hook
+        document.getElementById('btn-save-revenue').addEventListener('click', async () => {
+            if (!appState.voyageId) return alert('No active voyage set.');
+
+            const shipRev = parseFloat(document.getElementById('eod-total-revenue').value);
+            const dsRev = parseFloat(document.getElementById('eod-ds-revenue').value) || 0;
+
+            if (isNaN(shipRev)) return alert('Total Ship Revenue is required.');
+
+            const today = new Date().toISOString().split('T')[0];
+            const revenueData = {
+                id: `${appState.voyageId}_${today}`, 
+                voyageId: appState.voyageId,
+                date: today,
+                shipRevenue: shipRev,
+                dsRevenue: dsRev
             };
 
             try {
-                await db.put('contracts', contractData);
-                appState.contractId = contractId;
-                applyModeFirewall(mode);
-                document.getElementById('header-voyage-id').innerText = `${shipName} - ${mode.toUpperCase()}`;
-                alert('Contract Locked. App environment adapted.');
+                await db.put('daily_revenue', revenueData);
+                document.getElementById('eod-total-revenue').value = '';
+                document.getElementById('eod-ds-revenue').value = '';
+                alert(`Revenue locked successfully.`);
+                
+                await updateDashboardGCD(); 
+                await renderContextualEOD();
             } catch (error) {
-                console.error('Failed to save contract:', error);
+                console.error('Failed to save revenue:', error);
             }
         });
 
-        // B. Execute Transfer (Archive Current)
-        document.getElementById('btn-execute-transfer').addEventListener('click', async () => {
-            if(confirm('WARNING: This will archive your active contract and prompt you for new ship details. Proceed?')) {
-                if(appState.contractId) {
-                    const activeContract = await db.get('contracts', appState.contractId);
-                    if(activeContract) {
-                        activeContract.status = 'archived';
-                        await db.put('contracts', activeContract);
-                    }
-                }
-                appState.contractId = null;
-                appState.voyageId = null;
-                document.getElementById('cfg-ship-name').value = '';
-                document.getElementById('header-voyage-id').innerText = 'Awaiting Configuration';
-                alert('Contract Archived. Please input your new transfer assignment.');
-            }
-        });
-
-        // C. Generate Dynamic Itinerary Grid
-        document.getElementById('btn-generate-itinerary').addEventListener('click', () => {
-            const length = parseInt(document.getElementById('cfg-cruise-length').value);
-            if (!length || length <= 0) return alert('Enter a valid cruise length.');
-
-            const container = document.getElementById('itinerary-grid-container');
-            container.innerHTML = ''; // Clear existing
-
-            for (let i = 1; i <= length; i++) {
-                container.innerHTML += `
-                    <div class="itinerary-day-row ui-card" data-day="${i}" style="padding: 8px; margin-bottom: 4px; background: var(--bg-elevated);">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                            <strong style="font-size:0.85rem; color: var(--accent-blue);">Day ${i}</strong>
-                            <select class="ui-input day-type-toggle" style="width: auto; padding: 4px; font-size: 0.75rem; margin-bottom: 0;">
-                                <option value="sea">Sea Day</option>
-                                <option value="port">Port Day</option>
-                            </select>
-                        </div>
-                        <div class="day-fields" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-                            <div style="grid-column: span 2;">
-                                <label style="display:flex; align-items:center; font-size:0.8rem; color: var(--text-muted);">
-                                    <input type="checkbox" class="elegant-check" style="margin-right:8px; transform: scale(1.2);"> Elegant Night
-                                </label>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }
-
-            // Attach listeners to newly injected dropdowns
-            document.querySelectorAll('.day-type-toggle').forEach(select => {
-                select.addEventListener('change', (e) => {
-                    const row = e.target.closest('.itinerary-day-row');
-                    const fields = row.querySelector('.day-fields');
-                    
-                    if (e.target.value === 'port') {
-                        fields.innerHTML = `
-                            <div><label class="ui-label">Arrival</label><input type="time" class="ui-input time-arrival" style="margin-bottom:0; padding:6px;"></div>
-                            <div><label class="ui-label">All Aboard</label><input type="time" class="ui-input time-aboard" style="margin-bottom:0; padding:6px;"></div>
-                            <div style="grid-column: span 2;"><label class="ui-label">Gangway Clearance</label><input type="time" class="ui-input time-gangway" style="margin-bottom:0; padding:6px; border: 1px solid var(--accent-yellow);"></div>
-                        `;
-                    } else {
-                        fields.innerHTML = `
-                            <div style="grid-column: span 2;">
-                                <label style="display:flex; align-items:center; font-size:0.8rem; color: var(--text-muted);">
-                                    <input type="checkbox" class="elegant-check" style="margin-right:8px; transform: scale(1.2);"> Elegant Night
-                                </label>
-                            </div>
-                        `;
-                    }
-                });
-            });
-
-            document.getElementById('btn-save-voyage').classList.remove('hidden');
-        });
-
-        // D. Save Voyage & Itinerary Loop
-        document.getElementById('btn-save-voyage').addEventListener('click', async () => {
-            if(!appState.contractId) return alert('Lock Contract Setup first.');
+        // Dashboard Break Manifest Generator
+        async function renderDashboardBreakManifest() {
+            const manifestBox = document.getElementById('dash-break-manifest');
+            const today = new Date().toISOString().split('T')[0];
             
-            const voyageId = document.getElementById('cfg-voyage-id').value.trim();
-            const guests = parseInt(document.getElementById('cfg-guests').value);
-            
-            if (!voyageId || isNaN(guests)) return alert('Voyage ID and Guest Count required.');
-
             try {
-                // Save master voyage record
-                await db.put('voyages', {
-                    voyageId,
-                    contractId: appState.contractId,
-                    guests,
-                    status: 'active'
-                });
-
-                // Loop through DOM and save individual day itineraries
-                const dayRows = document.querySelectorAll('.itinerary-day-row');
-                for (let row of dayRows) {
-                    const dayNum = row.dataset.day;
-                    const type = row.querySelector('.day-type-toggle').value;
-                    
-                    let dayData = {
-                        id: `${voyageId}_D${dayNum}`,
-                        voyageId,
-                        dayNumber: parseInt(dayNum),
-                        type
-                    };
-
-                    if (type === 'port') {
-                        dayData.arrival = row.querySelector('.time-arrival').value;
-                        dayData.allAboard = row.querySelector('.time-aboard').value;
-                        dayData.gangway = row.querySelector('.time-gangway').value;
-                    } else {
-                        dayData.elegant = row.querySelector('.elegant-check').checked;
-                    }
-                    
-                    await db.put('itineraries', dayData);
+                const todaySchedule = await db.get('schedules', today);
+                
+                if (!todaySchedule || !todaySchedule.shifts || todaySchedule.shifts.length === 0) {
+                    manifestBox.innerHTML = '<span style="color: var(--text-muted); font-size: 0.8rem; font-style: italic;">Schedule not locked yet.</span>';
+                    return;
                 }
 
-                appState.voyageId = voyageId;
-                alert('Voyage & Itinerary Locked.');
-            } catch (error) {
-                console.error('Failed to save Voyage:', error);
+                let allBreaks = [];
+                for (const shift of todaySchedule.shifts) {
+                    if (shift.breaks && shift.breaks.length > 0) {
+                        const crew = await db.get('roster', shift.crewId);
+                        const crewName = crew ? crew.name : 'Unknown';
+                        
+                        shift.breaks.forEach(bTime => {
+                            allBreaks.push({ time: bTime, name: crewName });
+                        });
+                    }
+                }
+
+                if (allBreaks.length === 0) {
+                    manifestBox.innerHTML = '<span style="color: var(--text-muted); font-size: 0.8rem;">No breaks scheduled.</span>';
+                    return;
+                }
+
+                allBreaks.sort((a, b) => a.time.localeCompare(b.time));
+
+                manifestBox.innerHTML = '';
+                allBreaks.forEach(b => {
+                    manifestBox.innerHTML += `
+                        <div style="display: flex; justify-content: space-between; padding: 6px 8px; background: var(--bg-input); border-radius: 4px;">
+                            <strong style="color: var(--accent-green);">${b.time}</strong>
+                            <span>${b.name}</span>
+                        </div>
+                    `;
+                });
+
+            } catch (err) {
+                console.error('Error loading manifest:', err);
             }
-        });
+        }
         // ==========================================
-        // 4. ADVANCED ROSTER MANAGEMENT (Pillar 2)
+        // 7. ADVANCED ROSTER MANAGEMENT
         // ==========================================
         
         const rosterUI = {
@@ -1041,7 +1471,6 @@
             signOff: document.getElementById('crew-sign-off')
         };
 
-        // Open Modal (Add Mode)
         rosterUI.btnAdd.addEventListener('click', () => {
             rosterUI.id.value = '';
             rosterUI.name.value = '';
@@ -1054,12 +1483,10 @@
             rosterUI.modal.classList.remove('hidden');
         });
 
-        // Close Modal
         rosterUI.btnCancel.addEventListener('click', () => {
             rosterUI.modal.classList.add('hidden');
         });
 
-        // Save or Update Crew Profile
         rosterUI.btnSave.addEventListener('click', async () => {
             const name = rosterUI.name.value.trim();
             if (!name) return alert('Crew name is required.');
@@ -1073,10 +1500,7 @@
                 status: 'active'
             };
 
-            // If ID exists, we are updating. If not, IndexedDB auto-increments a new one.
-            if (rosterUI.id.value) {
-                crewData.id = parseInt(rosterUI.id.value);
-            }
+            if (rosterUI.id.value) crewData.id = parseInt(rosterUI.id.value);
 
             try {
                 await db.put('roster', crewData);
@@ -1087,13 +1511,12 @@
             }
         });
 
-        // Archive (Sign Off) Crew Member
         rosterUI.btnArchive.addEventListener('click', async () => {
             if (confirm('Are you sure you want to sign off this crew member?')) {
                 const id = parseInt(rosterUI.id.value);
                 try {
                     const crew = await db.get('roster', id);
-                    crew.status = 'archived'; // Soft delete to preserve historical logs
+                    crew.status = 'archived'; 
                     await db.put('roster', crew);
                     rosterUI.modal.classList.add('hidden');
                     await loadRoster();
@@ -1103,7 +1526,6 @@
             }
         });
 
-        // Global Helper: Populate any dropdown with active crew
         async function getActiveCrewOptions() {
             const activeCrew = await db.getAllByIndex('roster', 'status', 'active');
             let optionsHTML = '<option value="">Select Crew...</option>';
@@ -1113,7 +1535,6 @@
             return optionsHTML;
         }
 
-        // Load Roster to UI & Update Floor Math
         async function loadRoster() {
             try {
                 const activeCrew = await db.getAllByIndex('roster', 'status', 'active');
@@ -1134,7 +1555,6 @@
                                 <span style="color: var(--text-muted); font-size: 1.2rem;">›</span>
                             </div>
                         `;
-                        // Attach Edit Profile Trigger
                         card.addEventListener('click', () => {
                             rosterUI.id.value = crew.id;
                             rosterUI.name.value = crew.name;
@@ -1152,44 +1572,38 @@
                 
                 await calculateFloorCapacity();
                 
-                // Pre-fill rotation dropdowns if they exist
                 const options = await getActiveCrewOptions();
-                document.getElementById('rot-shooter-1').innerHTML = options;
-                document.getElementById('rot-shooter-2').innerHTML = options;
+                const rot1 = document.getElementById('rot-shooter-1');
+                const rot2 = document.getElementById('rot-shooter-2');
+                if (rot1) rot1.innerHTML = options;
+                if (rot2) rot2.innerHTML = options;
             } catch (error) {
                 console.error('Failed to load roster:', error);
             }
         }
 
         // ==========================================
-        // 5. BVA FLOOR CAPACITY & 9:00 PM ROTATION
+        // 8. BVA FLOOR CAPACITY & 9:00 PM ROTATION
         // ==========================================
         
         let isLateNight = false;
 
         async function calculateFloorCapacity() {
             const activeCrew = await db.getAllByIndex('roster', 'status', 'active');
-            
             let activeShooters = 0;
             let supportUnits = 0;
 
             activeCrew.forEach(crew => {
                 const role = crew.role;
-                
-                // Base assignments
                 if (['Photographer', 'Trainee', 'Senior'].includes(role)) {
                     activeShooters++;
                 } else if (['Manager', 'PrintShop', 'LabTechDuty', 'DreamsStudio'].includes(role)) {
                     supportUnits++;
                 }
 
-                // Dynamic assignments based on 9:00 PM Rotation
                 if (['APM', 'LabTechAssist'].includes(role)) {
-                    if (isLateNight) {
-                        supportUnits++; // Moved to Back-of-House
-                    } else {
-                        activeShooters++; // On the floor
-                    }
+                    if (isLateNight) supportUnits++; // Moved to Back-of-House
+                    else activeShooters++; // On the floor
                 }
             });
 
@@ -1197,52 +1611,274 @@
             document.getElementById('dash-support-units').innerText = supportUnits;
         }
 
-        // Trigger 9:00 PM UI
         document.getElementById('btn-trigger-rotation').addEventListener('click', () => {
             document.getElementById('inline-rotation-setup').classList.remove('hidden');
             document.getElementById('btn-trigger-rotation').classList.add('hidden');
         });
 
-        // Execute Rotation Math
         document.getElementById('btn-confirm-rotation').addEventListener('click', async () => {
             isLateNight = true;
             await calculateFloorCapacity();
             
-            document.getElementById('dash-theme-tag').innerText = 'Late Night Rotation Active';
-            document.getElementById('dash-theme-tag').style.background = 'var(--accent-yellow)';
-            document.getElementById('dash-theme-tag').style.color = '#000';
+            const themeTag = document.getElementById('dash-theme-tag');
+            themeTag.innerText = 'Late Night Rotation Active';
+            themeTag.style.background = 'var(--accent-yellow)';
+            themeTag.style.color = '#000';
             
             document.getElementById('inline-rotation-setup').classList.add('hidden');
-            alert('Floor capacity updated. Break logic assumes APM and Asst. Lab Tech are off the floor.');
+            alert('Floor capacity updated. APM and Asst. Lab Tech moved to Support.');
         });
 
         // ==========================================
-        // 6. DAILY TEAM SCHEDULE BUILDER
+        // 9. SMART SCHEDULE ENGINE (Day Type & UI)
         // ==========================================
         
         const scheduleGrid = document.getElementById('schedule-grid-container');
+        const scheduleWarn = document.getElementById('schedule-warning-banner');
+
+        // Master function to determine operational constraints for tonight
+        async function getCurrentDayType() {
+            if (!appState.voyageId) return 'casual';
+            const today = new Date().toISOString().split('T')[0];
+            const itineraryDays = await db.getAllByIndex('itineraries', 'voyageId', appState.voyageId);
+
+            if (itineraryDays.length === 0) return 'casual';
+
+            // Find final day of cruise for Debark logic
+            itineraryDays.sort((a, b) => a.dayNumber - b.dayNumber);
+            const lastDay = itineraryDays[itineraryDays.length - 1];
+
+            const todayData = itineraryDays.find(d => d.date === today);
+            if (!todayData) return 'casual'; 
+
+            if (todayData.date === lastDay.date) return 'debark'; 
+            if (todayData.elegant) return 'elegant';
+
+            return 'casual';
+        }
 
         document.getElementById('btn-add-shift').addEventListener('click', async () => {
             document.getElementById('schedule-empty-state')?.remove();
             
             const options = await getActiveCrewOptions();
-            
+            const dayType = await getCurrentDayType();
+
             const row = document.createElement('div');
-            row.className = 'schedule-row';
-            row.style.cssText = 'display: grid; grid-template-columns: 2fr 1fr 2fr 30px; gap: 8px; align-items: center; margin-bottom: 4px;';
-            
-            row.innerHTML = `
-                <select class="ui-input sched-crew" style="margin-bottom: 0; padding: 8px 4px; font-size: 0.85rem;">
-                    ${options}
-                </select>
-                <input type="text" class="ui-input sched-time" placeholder="1700-2300" style="margin-bottom: 0; padding: 8px 4px; text-align: center; font-size: 0.85rem;">
-                <input type="text" class="ui-input sched-loc" placeholder="Backdrop" style="margin-bottom: 0; padding: 8px 4px; font-size: 0.85rem;">
-                <button class="btn-remove-shift" style="background: none; border: none; color: var(--accent-red); font-size: 1rem; cursor: pointer;">✕</button>
+            row.className = 'schedule-row ui-card';
+            row.style.cssText = 'padding: 8px; margin-bottom: 8px; border-color: var(--accent-blue);';
+            row.dataset.dayType = dayType;
+
+            let html = `
+                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                    <select class="ui-input sched-crew" style="margin-bottom: 0; padding: 6px; width: 60%;">${options}</select>
+                    <button class="btn-remove-shift" style="background: none; border: none; color: var(--accent-red); font-size: 0.8rem; font-weight: bold; cursor: pointer;">✕ Remove</button>
+                </div>
             `;
-            
-            row.querySelector('.btn-remove-shift').addEventListener('click', () => row.remove());
+
+            if (dayType === 'debark') {
+                html += `
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
+                        <div>
+                            <label class="ui-label">Assignment</label>
+                            <select class="ui-input sched-loc" style="margin-bottom:0; padding: 6px; font-size: 0.8rem;">
+                                <option value="Gallery 16:00">Gallery 16:00</option>
+                                <option value="Gallery 17:30">Gallery 17:30</option>
+                                <option value="Backdrop 17:30">Backdrop 17:30</option>
+                                <option value="Dining Room (Relief)">Dining Room (Relief)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="ui-label">Copy Side Time</label>
+                            <input type="text" class="ui-input sched-copy" placeholder="e.g. 1930-2030" style="margin-bottom:0; padding: 6px; font-size: 0.8rem;">
+                        </div>
+                    </div>
+                    <div class="breaks-container" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                        <div>
+                            <label class="ui-label">Break 1</label>
+                            <input type="time" class="ui-input sched-break-1" style="margin-bottom:0; padding: 6px;">
+                        </div>
+                        <div>
+                            <label class="ui-label">Break 2</label>
+                            <input type="time" class="ui-input sched-break-2" style="margin-bottom:0; padding: 6px;">
+                        </div>
+                    </div>
+                `;
+            } else {
+                const breakLabel = dayType === 'elegant' ? 'Break (20m)' : 'Break (30m)';
+                html += `
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
+                        <div>
+                            <label class="ui-label">Shift Start</label>
+                            <select class="ui-input sched-start" style="margin-bottom:0; padding: 6px; font-size: 0.8rem;">
+                                <option value="16:00">16:00 (4:00 PM)</option>
+                                <option value="17:00" selected>17:00 (5:00 PM)</option>
+                                <option value="17:30">17:30 (5:30 PM)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="ui-label">Location / Duty</label>
+                            <input type="text" class="ui-input sched-loc" placeholder="e.g. Atrium" style="margin-bottom:0; padding: 6px; font-size: 0.8rem;">
+                        </div>
+                    </div>
+                    <div class="breaks-container" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                        <div>
+                            <label class="ui-label b1-label">${breakLabel} 1</label>
+                            <input type="time" class="ui-input sched-break-1" style="margin-bottom:0; padding: 6px;">
+                        </div>
+                        <div>
+                            <label class="ui-label b2-label hidden">${breakLabel} 2</label>
+                            <input type="time" class="ui-input sched-break-2 hidden" style="margin-bottom:0; padding: 6px;">
+                        </div>
+                    </div>
+                `;
+            }
+
+            row.innerHTML = html;
+
+            // --- UI Dynamic Constraint Wiring ---
+            if (dayType !== 'debark') {
+                const startSelect = row.querySelector('.sched-start');
+                const b1 = row.querySelector('.sched-break-1');
+                const b2 = row.querySelector('.sched-break-2');
+                const b2Label = row.querySelector('.b2-label');
+
+                startSelect.addEventListener('change', (e) => {
+                    const start = e.target.value;
+                    if (dayType === 'elegant') {
+                        // Elegant: Everyone gets ONE 20-min break
+                        b1.classList.remove('hidden');
+                        b2.classList.add('hidden');
+                        b2Label.classList.add('hidden');
+                        b1.disabled = false;
+                        b2.value = '';
+                    } else {
+                        // Casual rules
+                        if (start === '16:00') {
+                            b1.classList.remove('hidden');
+                            b2.classList.remove('hidden');
+                            b2Label.classList.remove('hidden');
+                            b1.disabled = false; b2.disabled = false;
+                        } else if (start === '17:00') {
+                            b1.classList.remove('hidden');
+                            b2.classList.add('hidden');
+                            b2Label.classList.add('hidden');
+                            b1.disabled = false;
+                            b2.value = '';
+                        } else if (start === '17:30') {
+                            b1.classList.add('hidden');
+                            b2.classList.add('hidden');
+                            b2Label.classList.add('hidden');
+                            b1.value = ''; b2.value = '';
+                        }
+                    }
+                });
+                startSelect.dispatchEvent(new Event('change')); // Trigger initial state
+            } else {
+                const locSelect = row.querySelector('.sched-loc');
+                const b1 = row.querySelector('.sched-break-1');
+                const b2 = row.querySelector('.sched-break-2');
+                const copyInp = row.querySelector('.sched-copy');
+
+                locSelect.addEventListener('change', (e) => {
+                    const loc = e.target.value;
+                    if (loc === 'Gallery 16:00') {
+                        b1.disabled = false; b2.disabled = false;
+                        copyInp.disabled = false;
+                        copyInp.style.opacity = '1';
+                    } else if (loc === 'Gallery 17:30') {
+                        b1.disabled = false; 
+                        b2.disabled = true; b2.value = '';
+                        copyInp.disabled = false;
+                        copyInp.style.opacity = '1';
+                    } else if (loc === 'Backdrop 17:30') {
+                        b1.disabled = true; b1.value = '';
+                        b2.disabled = true; b2.value = '';
+                        copyInp.disabled = true; copyInp.value = '';
+                        copyInp.style.opacity = '0.5';
+                    } else if (loc === 'Dining Room (Relief)') {
+                        b1.disabled = false;
+                        b2.disabled = true; b2.value = '';
+                        copyInp.disabled = true; copyInp.value = '';
+                        copyInp.style.opacity = '0.5';
+                    }
+                });
+            }
+
+            row.querySelector('.btn-remove-shift').addEventListener('click', () => {
+                row.remove();
+                if (typeof validateScheduleMath === 'function') validateScheduleMath();
+            });
+
+            row.querySelectorAll('input[type="time"]').forEach(inp => {
+                inp.addEventListener('change', () => {
+                    if (typeof validateScheduleMath === 'function') validateScheduleMath();
+                });
+            });
+
             scheduleGrid.appendChild(row);
         });
+        // ==========================================
+        // 10. SCHEDULE VALIDATION & MATH ENGINE
+        // ==========================================
+
+        function validateScheduleMath() {
+            const warnBanner = document.getElementById('schedule-warning-banner');
+            const rows = document.querySelectorAll('.schedule-row');
+            
+            let breakCounts = {};
+            let copyCount = 0;
+            let isDebark = false;
+
+            // Scan the DOM for active inputs
+            rows.forEach(row => {
+                if (row.dataset.dayType === 'debark') isDebark = true;
+
+                const b1 = row.querySelector('.sched-break-1');
+                const b2 = row.querySelector('.sched-break-2');
+                
+                // Aggregate Break Times
+                if (b1 && b1.value && !b1.disabled) {
+                    breakCounts[b1.value] = (breakCounts[b1.value] || 0) + 1;
+                }
+                if (b2 && b2.value && !b2.disabled) {
+                    breakCounts[b2.value] = (breakCounts[b2.value] || 0) + 1;
+                }
+
+                // Aggregate Copy Side Assignments (Debarkation Only)
+                if (isDebark) {
+                    const copyInp = row.querySelector('.sched-copy');
+                    if (copyInp && copyInp.value.trim() !== '' && !copyInp.disabled) {
+                        copyCount++;
+                    }
+                }
+            });
+
+            let warnings = [];
+            
+            // 1. Two-Shooter Break Cap Check
+            for (const [time, count] of Object.entries(breakCounts)) {
+                if (count > 2) {
+                    warnings.push(`⚠️ <strong>Break Conflict:</strong> ${count} photographers scheduled at ${time} (Max is 2).`);
+                }
+            }
+
+            // 2. Copy Table Minimum Coverage Check
+            if (isDebark && copyCount < 2) {
+                warnings.push(`⚠️ <strong>Copy Side Warning:</strong> Only ${copyCount} crew assigned. Minimum of 2 recommended for rush.`);
+            }
+
+            // Output Warnings (Advisory Only)
+            if (warnings.length > 0) {
+                warnBanner.innerHTML = warnings.join('<br>');
+                warnBanner.classList.remove('hidden');
+            } else {
+                warnBanner.classList.add('hidden');
+            }
+        }
+
+        // ==========================================
+        // 11. SCHEDULE SAVE LOOP & BINDING
+        // ==========================================
 
         document.getElementById('btn-save-schedule').addEventListener('click', async () => {
             const today = new Date().toISOString().split('T')[0];
@@ -1254,26 +1890,57 @@
             };
 
             rows.forEach(row => {
-                const crewId = row.querySelector('.sched-crew').value;
-                const time = row.querySelector('.sched-time').value.trim();
-                const loc = row.querySelector('.sched-loc').value.trim();
+                const crewSelect = row.querySelector('.sched-crew');
+                const crewId = crewSelect ? crewSelect.value : null;
+                const dayType = row.dataset.dayType;
                 
-                if (crewId && time && loc) {
-                    schedulePayload.shifts.push({ crewId: parseInt(crewId), time, loc });
+                if (!crewId) return; // Skip empty rows
+
+                let shiftData = { 
+                    crewId: parseInt(crewId), 
+                    breaks: [] 
+                };
+
+                // Extract Active Breaks
+                const b1 = row.querySelector('.sched-break-1');
+                const b2 = row.querySelector('.sched-break-2');
+
+                if (b1 && b1.value && !b1.disabled) shiftData.breaks.push(b1.value);
+                if (b2 && b2.value && !b2.disabled) shiftData.breaks.push(b2.value);
+
+                // Extract Day-Specific Variables
+                if (dayType === 'debark') {
+                    shiftData.loc = row.querySelector('.sched-loc').value;
+                    const copyInp = row.querySelector('.sched-copy');
+                    if (copyInp && copyInp.value && !copyInp.disabled) {
+                        shiftData.copyTime = copyInp.value.trim();
+                    }
+                } else {
+                    const start = row.querySelector('.sched-start').value;
+                    const loc = row.querySelector('.sched-loc').value.trim();
+                    shiftData.time = start;
+                    shiftData.loc = loc;
                 }
+
+                schedulePayload.shifts.push(shiftData);
             });
 
-            if (schedulePayload.shifts.length === 0) return alert('No complete shifts to save.');
+            if (schedulePayload.shifts.length === 0) return alert('No valid shifts to save.');
 
             try {
                 await db.put('schedules', schedulePayload);
                 alert(`Schedule locked for ${today}.`);
+                
+                // Immediately update the Dashboard Manifest
+                if (typeof renderDashboardBreakManifest === 'function') {
+                    await renderDashboardBreakManifest();
+                }
             } catch (error) {
                 console.error('Failed to save schedule:', error);
             }
         });
         // ==========================================
-        // 7. GALLERY CONFIGURATION (Settings Save)
+        // 12. GALLERY CONFIGURATION (Settings Save)
         // ==========================================
         
         document.getElementById('btn-save-panel').addEventListener('click', async () => {
@@ -1314,12 +1981,11 @@
         });
 
         // ==========================================
-        // 8. ADVANCED GALLERY MATH ENGINE (Pillar 4)
+        // 13. ADVANCED GALLERY MATH ENGINE (Pillar 4)
         // ==========================================
         
         const spaceGrid = document.getElementById('space-grid-container');
 
-        // Dynamically populate the default first row's dropdown on boot
         async function initSpaceGrid() {
             const defaultRowSelect = spaceGrid.querySelector('.space-photographer');
             if (defaultRowSelect) {
@@ -1327,13 +1993,12 @@
             }
         }
 
-        // Add additional production rows
         document.getElementById('btn-add-space-row').addEventListener('click', async () => {
             const options = await getActiveCrewOptions();
             
             const row = document.createElement('div');
             row.className = 'space-calc-row';
-            row.style.cssText = 'display: grid; grid-template-columns: 2fr 1.2fr 1.2fr 30px; gap: 6px; align-items: center;';
+            row.style.cssText = 'display: grid; grid-template-columns: 2fr 1.2fr 1.2fr 30px; gap: 6px; align-items: center; margin-bottom: 6px;';
             
             row.innerHTML = `
                 <select class="ui-input space-photographer" style="margin-bottom: 0; padding: 8px 4px; font-size: 0.85rem;">
@@ -1348,7 +2013,6 @@
             spaceGrid.appendChild(row);
         });
 
-        // Execute Real-Estate Math
         document.getElementById('btn-calculate-space').addEventListener('click', async () => {
             const format = document.getElementById('space-format').value;
             const targetPanel = document.getElementById('space-target-panel').value;
@@ -1356,20 +2020,17 @@
             
             let totalEstimatedSessions = 0;
 
-            // 1. Aggregate Session Volume
             rows.forEach(row => {
                 const totalPics = parseInt(row.querySelector('.space-total-pics').value);
                 const picsPerSession = parseFloat(row.querySelector('.space-pics-per-session').value);
                 
                 if (!isNaN(totalPics) && !isNaN(picsPerSession) && picsPerSession > 0) {
-                    // Math.ceil ensures partial sessions (e.g. 1.2) take up a full physical slot
                     totalEstimatedSessions += Math.ceil(totalPics / picsPerSession);
                 }
             });
 
             if (totalEstimatedSessions === 0) return alert('Enter valid production numbers to calculate.');
 
-            // 2. Fetch Hardware Rules from DB
             try {
                 const hardware = await db.get('gallery_config', targetPanel);
                 
@@ -1382,15 +2043,12 @@
                     return alert(`You have not defined a line capacity for ${format} on Panel Type ${targetPanel}. Check your Settings.`);
                 }
 
-                // 3. Execute Core Layout Math
                 const totalLinesNeeded = Math.ceil(totalEstimatedSessions / capacityPerLine);
                 const totalPanelsNeeded = Math.ceil(totalLinesNeeded / hardware.linesPerPanel);
                 
-                // Calculate remaining blank lines on the final panel for overlap planning
                 const consumedLinesOnLastPanel = totalLinesNeeded % hardware.linesPerPanel || hardware.linesPerPanel;
                 const blankLinesRemaining = hardware.linesPerPanel - consumedLinesOnLastPanel;
 
-                // 4. Output to UI
                 document.getElementById('space-out-sessions').innerText = totalEstimatedSessions;
                 document.getElementById('space-out-panels').innerText = `${totalPanelsNeeded} Panels Required`;
                 
@@ -1410,7 +2068,7 @@
         });
 
         // ==========================================
-        // 9. SMART INVENTORY ENGINE (Pillar 5)
+        // 14. SMART INVENTORY ENGINE (Pillar 5)
         // ==========================================
 
         const invUI = {
@@ -1422,14 +2080,12 @@
             listContainer: document.getElementById('inventory-list-container')
         };
 
-        // Save / Update Inventory Item
         invUI.btnSave.addEventListener('click', async () => {
             const name = invUI.name.value.trim();
             const category = invUI.category.value;
             const stock = parseInt(invUI.stock.value);
             const parInput = invUI.par.value;
             
-            // Allow par to be optional (null)
             const par = parInput !== '' ? parseInt(parInput) : null;
 
             if (!name || isNaN(stock)) return alert('Item name and current stock quantity are required.');
@@ -1443,17 +2099,15 @@
             };
 
             try {
-                // To prevent duplicates, we check if an item with this exact name exists
                 const existingItems = await db.getAll('inventory');
                 const match = existingItems.find(item => item.name.toLowerCase() === name.toLowerCase());
                 
                 if (match) {
-                    invData.id = match.id; // Triggers an update/overwrite
+                    invData.id = match.id; 
                 }
 
                 await db.put('inventory', invData);
                 
-                // Clear inputs
                 invUI.name.value = '';
                 invUI.stock.value = '';
                 invUI.par.value = '';
@@ -1464,7 +2118,6 @@
             }
         });
 
-        // Load & Render Inventory
         async function loadInventory() {
             try {
                 const items = await db.getAll('inventory');
@@ -1475,20 +2128,17 @@
                     return;
                 }
 
-                // Group items by category for cleaner UI rendering
                 const categories = ['Retails', 'Consumables', 'VIFP', 'FreeGifts'];
                 
                 categories.forEach(cat => {
                     const catItems = items.filter(i => i.category === cat);
                     if (catItems.length > 0) {
                         
-                        // Category Header
                         const header = document.createElement('div');
                         header.style.cssText = 'font-size: 0.75rem; color: var(--accent-blue); text-transform: uppercase; margin-top: 8px; border-bottom: 1px solid var(--border-subtle); padding-bottom: 4px;';
                         header.innerText = cat;
                         invUI.listContainer.appendChild(header);
 
-                        // Item Rows
                         catItems.forEach(item => {
                             let deficitBadge = '';
                             if (item.par !== null && item.stock < item.par) {
@@ -1516,117 +2166,9 @@
                 console.error('Failed to load inventory:', error);
             }
         }
-        // ==========================================
-        // 10. EOD REVENUE ENGINE & DASHBOARD PACING
-        // ==========================================
-
-        // Save Daily Revenue
-        document.getElementById('btn-save-revenue').addEventListener('click', async () => {
-            if (!appState.voyageId) return alert('No active voyage set. Please configure a voyage first.');
-
-            const shipRev = parseFloat(document.getElementById('eod-total-revenue').value);
-            const dsRev = parseFloat(document.getElementById('eod-ds-revenue').value) || 0; // DS is optional
-
-            if (isNaN(shipRev)) return alert('Total Ship Revenue is required.');
-
-            const today = new Date().toISOString().split('T')[0];
-            const revenueData = {
-                id: `${appState.voyageId}_${today}`, // Compound key prevents duplicates for the same day
-                voyageId: appState.voyageId,
-                date: today,
-                shipRevenue: shipRev,
-                dsRevenue: dsRev
-            };
-
-            try {
-                await db.put('daily_revenue', revenueData);
-                document.getElementById('eod-total-revenue').value = '';
-                document.getElementById('eod-ds-revenue').value = '';
-                alert(`Revenue for ${today} locked successfully.`);
-                
-                await updateDashboardGCD(); // Trigger dashboard refresh
-            } catch (error) {
-                console.error('Failed to save revenue:', error);
-            }
-        });
-
-        // Calculate and Update Dashboard Financials
-        async function updateDashboardGCD() {
-            if (!appState.voyageId || !appState.contractId) return;
-
-            try {
-                // Fetch Master Variables
-                const activeContract = await db.get('contracts', appState.contractId);
-                const activeVoyage = await db.get('voyages', appState.voyageId);
-                
-                if (!activeContract || !activeVoyage) return;
-
-                const guestCount = activeVoyage.guests;
-                const targetGcd = activeContract.targetGcd;
-                
-                document.getElementById('dash-target-gcd').innerText = `$${targetGcd.toFixed(2)}`;
-
-                // Fetch all revenue days for this specific voyage
-                const allRevenue = await db.getAllByIndex('daily_revenue', 'voyageId', appState.voyageId);
-                
-                let cumulativeShipRev = 0;
-                let cumulativeDsRev = 0;
-
-                allRevenue.forEach(day => {
-                    cumulativeShipRev += day.shipRevenue;
-                    cumulativeDsRev += day.dsRevenue;
-                });
-
-                // Core GCD Math
-                const actualGcd = guestCount > 0 ? (cumulativeShipRev / guestCount) : 0;
-                const dsGcd = guestCount > 0 ? (cumulativeDsRev / guestCount) : 0;
-
-                // Update UI Numbers
-                document.getElementById('dash-actual-gcd').innerText = `$${actualGcd.toFixed(2)}`;
-                document.getElementById('dash-ds-gcd').innerText = `$${dsGcd.toFixed(2)}`;
-                document.getElementById('dash-ds-rev').innerText = `$${cumulativeDsRev.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
-
-                // Status Logic & Color Coding
-                const statusElement = document.getElementById('dash-gcd-status');
-                if (allRevenue.length === 0) {
-                    statusElement.innerText = 'Awaiting Revenue Data';
-                    statusElement.style.color = 'var(--text-muted)';
-                    statusElement.style.border = '1px solid var(--border-subtle)';
-                } else if (actualGcd >= targetGcd) {
-                    statusElement.innerText = `OVER TARGET (+ $${(actualGcd - targetGcd).toFixed(2)})`;
-                    statusElement.style.color = '#000';
-                    statusElement.style.background = 'var(--accent-green)';
-                } else {
-                    const variance = targetGcd - actualGcd;
-                    if (variance <= 0.50) {
-                        statusElement.innerText = `APPROACHING TARGET (- $${variance.toFixed(2)})`;
-                        statusElement.style.color = '#000';
-                        statusElement.style.background = 'var(--accent-yellow)';
-                    } else {
-                        statusElement.innerText = `DEFICIT (- $${variance.toFixed(2)})`;
-                        statusElement.style.color = '#fff';
-                        statusElement.style.background = 'var(--accent-red)';
-                    }
-                }
-
-                // Morning Gallery Workflow Gangway Trigger
-                // Finds the next port day on the itinerary to pull gangway time
-                const itineraryDays = await db.getAllByIndex('itineraries', 'voyageId', appState.voyageId);
-                const nextPortDay = itineraryDays.find(day => day.type === 'port' && day.gangway);
-                
-                if (nextPortDay && nextPortDay.gangway) {
-                    document.getElementById('dash-gangway-time').innerText = `Gangway: ${nextPortDay.gangway}`;
-                } else {
-                    document.getElementById('dash-gangway-time').innerText = 'Gangway: N/A (Sea Day)';
-                }
-
-            } catch (error) {
-                console.error('Failed to calculate GCD:', error);
-            }
-        }
 
         // ==========================================
-        // 11. MASTER BOOTLOADER (Initialization sequence)
+        // 15. MASTER BOOTLOADER (Initialization)
         // ==========================================
         
         async function loadActiveEnvironment() {
@@ -1640,15 +2182,18 @@
                     applyModeFirewall(activeContract.mode);
                     document.getElementById('header-voyage-id').innerText = `${activeContract.shipName} - ${activeContract.mode.toUpperCase()}`;
                     
-                    // 2. Check for Active Voyage under this Contract
-                    const allVoyages = await db.getAllByIndex('voyages', 'contractId', activeContract.id);
+                    // 2. Check for Active Voyage
+                    const allVoyages = await db.getAll('voyages');
                     const activeVoyage = allVoyages.find(v => v.status === 'active');
                     
                     if (activeVoyage) {
                         appState.voyageId = activeVoyage.voyageId;
                         await updateDashboardGCD();
+                        await renderContextualEOD();
+                        await renderDashboardBreakManifest();
                     } else {
                         // Show config if contract exists but no active voyage
+                        await renderPendingVoyages();
                         document.getElementById('modal-settings').classList.remove('hidden');
                     }
                 } else {
@@ -1662,7 +2207,7 @@
 
         // The Engine Spark
         window.addEventListener('DOMContentLoaded', async () => {
-            console.log('[Bootloader] Initializing Universal APM Engine...');
+            console.log('[Bootloader] Initializing Universal APM Engine V3...');
             
             try {
                 // Ignite Database
