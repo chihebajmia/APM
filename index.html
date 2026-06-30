@@ -9,23 +9,21 @@
     <link rel="manifest" href="./manifest.json">
     <title>APM Engine</title>
     <style>
-        :root{--bg-base:#000;--bg-card:#141414;--bg-input:#222;--bg-elevated:#2a2a2a;--text-main:#f0f0f0;--text-muted:#888;--accent-green:#32D74B;--accent-red:#FF453A;--accent-yellow:#FFD60A;--accent-blue:#0A84FF;--accent-purple:#AF52DE;--border-subtle:1px solid #333;--radius-card:14px;--radius-input:10px;--pad-sm:8px;--pad-md:16px;--font-sm:0.8rem;--font-md:0.95rem;--font-lg:1.2rem}
+        :root{--bg:#f8f9fa;--card-bg:#fff;--text:#1a1a1a;--muted:#6c757d;--blue:#0A84FF;--green:#32D74B;--red:#FF453A;--yellow:#FFD60A;--purple:#AF52DE;--border:1px solid #dee2e6;--radius:12px;--pad:16px;--font-sm:0.85rem;--font-md:1rem;--font-lg:1.2rem}
         *{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;-webkit-tap-highlight-color:transparent}
-        body{background:var(--bg-base);color:var(--text-main);overflow-x:hidden;overscroll-behavior-y:none;padding-bottom:90px;font-size:var(--font-md);line-height:1.4}
-        .toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--bg-elevated);color:var(--text-main);padding:10px 20px;border-radius:20px;font-size:var(--font-sm);box-shadow:0 4px 12px rgba(0,0,0,.5);z-index:2000;opacity:0;transition:opacity .3s;pointer-events:none}
+        body{background:var(--bg);color:var(--text);padding-bottom:80px;font-size:var(--font-md);line-height:1.4}
+        .toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:12px 24px;border-radius:24px;font-size:var(--font-sm);box-shadow:0 4px 12px rgba(0,0,0,.2);z-index:2000;opacity:0;transition:opacity .3s;pointer-events:none}
         .toast.show{opacity:1}
-        .ui-card{background:var(--bg-card);padding:var(--pad-md);border-radius:var(--radius-card);border:var(--border-subtle);margin-bottom:var(--pad-md)}
-        .ui-input{width:100%;padding:12px;background:var(--bg-input);color:var(--text-main);border:none;border-radius:var(--radius-input);margin-bottom:12px;font-size:var(--font-md)}
-        .ui-input:focus{outline:1px solid var(--accent-blue)}
-        .ui-label{display:block;font-size:var(--font-sm);color:var(--text-muted);margin-bottom:4px}
-        .ui-btn{width:100%;padding:14px;border:none;border-radius:var(--radius-input);font-weight:700;font-size:var(--font-md);text-align:center;cursor:pointer;transition:opacity .2s}
-        .ui-btn:active{opacity:.7}
-        .ui-btn-blue{background:var(--accent-blue);color:#fff}
-        .ui-btn-green{background:var(--accent-green);color:#000}
-        .ui-btn-yellow{background:var(--accent-yellow);color:#000}
-        .ui-btn-red{background:var(--accent-red);color:#fff}
-        .ui-btn-purple{background:var(--accent-purple);color:#fff}
-        .ui-btn-outline{background:transparent;border:1px solid var(--text-muted);color:var(--text-main)}
+        .card{background:var(--card-bg);padding:var(--pad);border-radius:var(--radius);border:var(--border);margin-bottom:12px}
+        .input{width:100%;padding:12px;background:#fff;border:1px solid #ccc;border-radius:8px;margin-bottom:12px;font-size:var(--font-md)}
+        .input:focus{outline:1px solid var(--blue);border-color:var(--blue)}
+        .label{display:block;font-size:var(--font-sm);color:var(--muted);margin-bottom:4px}
+        .btn{width:100%;padding:14px;border:none;border-radius:8px;font-weight:700;font-size:var(--font-md);cursor:pointer;transition:opacity .2s;background:#e9ecef;color:var(--text)}
+        .btn:active{opacity:.7}
+        .btn-blue{background:var(--blue);color:#fff}
+        .btn-green{background:var(--green);color:#fff}
+        .btn-red{background:var(--red);color:#fff}
+        .btn-outline{background:transparent;border:1px solid var(--muted);color:var(--text)}
         .hidden{display:none!important}
         .flex-between{display:flex;justify-content:space-between;align-items:center}
         .flex-col{display:flex;flex-direction:column}
@@ -34,370 +32,199 @@
         .mt-2{margin-top:16px}
         .mb-1{margin-bottom:8px}
         .text-sm{font-size:var(--font-sm)}
-        .text-muted{color:var(--text-muted)}
+        .text-muted{color:var(--muted)}
         .text-bold{font-weight:700}
-        .progress-bar-bg{width:100%;height:10px;background:var(--bg-input);border-radius:5px;overflow:hidden;margin-top:8px}
+        .progress-bar-bg{width:100%;height:8px;background:#e9ecef;border-radius:4px;overflow:hidden;margin-top:6px}
         .progress-bar-fill{height:100%;width:0%;transition:width .3s}
-        .status-badge{padding:4px 10px;border-radius:12px;font-size:.7rem;font-weight:700}
-        #app-header{background:var(--bg-card);padding:var(--pad-md);border-bottom:var(--border-subtle);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:100}
-        #view-container{padding:var(--pad-md);max-width:600px;margin:0 auto}
-        #bottom-nav{position:fixed;bottom:0;width:100%;background:var(--bg-card);border-top:var(--border-subtle);display:grid;grid-template-columns:repeat(5,1fr);padding:6px 0 calc(6px + env(safe-area-inset-bottom));z-index:100}
-        .nav-btn{background:0 0;border:none;color:var(--text-muted);font-size:.65rem;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;padding:4px 0}
-        .nav-btn.active{color:var(--accent-blue)}
-        .timeline-bar{display:flex;align-items:center;height:28px;margin-bottom:4px;background:var(--bg-input);border-radius:8px;overflow:hidden;position:relative}
-        .timeline-block{height:100%;display:flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:700;color:#000;cursor:pointer}
-        .break-block{background:var(--accent-yellow)}
-        .copy-block{background:var(--accent-blue);color:#fff}
-        .dining-block{background:var(--accent-red);color:#fff}
-        .badge-dot{width:8px;height:8px;border-radius:50%;background:var(--accent-red);position:absolute;top:-2px;right:-2px}
+        .badge{padding:4px 8px;border-radius:12px;font-size:.7rem;font-weight:700;display:inline-block}
+        .badge-green{background:var(--green);color:#fff}
+        .badge-red{background:var(--red);color:#fff}
+        .badge-yellow{background:var(--yellow);color:#000}
+        .badge-purple{background:var(--purple);color:#fff}
+        #app-header{background:var(--card-bg);padding:12px var(--pad);border-bottom:var(--border);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:100}
+        #view-container{padding:var(--pad);max-width:600px;margin:0 auto}
+        #bottom-nav{position:fixed;bottom:0;width:100%;background:var(--card-bg);border-top:var(--border);display:grid;grid-template-columns:repeat(5,1fr);padding:8px 0 calc(8px + env(safe-area-inset-bottom));z-index:100}
+        .nav-btn{background:0 0;border:none;color:var(--muted);font-size:.65rem;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer}
+        .nav-btn.active{color:var(--blue)}
+        .badge-dot{width:8px;height:8px;border-radius:50%;background:var(--red);position:absolute;top:-2px;right:-2px}
     </style>
 </head>
 <body>
     <div id="toast" class="toast"></div>
     <header id="app-header">
-        <div>
-            <h1 style="font-size:var(--font-lg);margin-bottom:2px">APM Engine</h1>
-            <span id="header-voyage-id" class="text-sm text-muted">Awaiting Configuration</span>
-        </div>
+        <div><h1 style="font-size:var(--font-lg)">APM Engine</h1><span id="header-voyage-id" class="text-sm text-muted">Awaiting Configuration</span></div>
         <button id="btn-open-settings" style="background:0 0;border:none;font-size:1.5rem;cursor:pointer">⚙️</button>
     </header>
     <main id="view-container">
+        <!-- HOME -->
+        <div id="view-home" class="app-view">
+            <div class="card"><h2 class="text-muted mb-1">Today's Checklist</h2><div id="checklist-container" class="flex-col gap-1"></div></div>
+            <div class="card"><h2 class="text-muted mb-1">Revenue Pacing</h2>
+                <div class="flex-between"><span>Voyage GCD</span><span id="home-voyage-gcd">$0 / $0</span></div><div class="progress-bar-bg"><div id="home-voyage-bar" class="progress-bar-fill" style="background:var(--blue)"></div></div>
+                <div class="flex-between mt-1"><span>Monthly GCD</span><span id="home-month-gcd">$0 / $0</span></div><div class="progress-bar-bg"><div id="home-month-bar" class="progress-bar-fill" style="background:var(--green)"></div></div>
+                <div class="flex-between mt-1"><span>PRYR GCD</span><span id="home-pryr-gcd">$0 / $0</span></div><div class="progress-bar-bg"><div id="home-pryr-bar" class="progress-bar-fill" style="background:var(--purple)"></div></div>
+                <div class="flex-between mt-1"><span>Total Revenue</span><span id="home-total-rev">$0</span></div>
+            </div>
+            <div class="card"><h2 class="text-muted mb-1">Tonight's Manifest</h2><div id="home-manifest" class="text-sm"></div></div>
+            <div class="card"><h2 class="text-muted mb-1">Notes</h2><textarea id="home-notes" class="input" rows="2" placeholder="Jot something down..."></textarea></div>
+        </div>
+
+        <!-- SCHEDULE -->
+        <div id="view-schedule" class="app-view hidden">
+            <div class="card"><div class="flex-between mb-2"><h2>Daily Schedule</h2><select id="day-type-override" class="input" style="width:auto;padding:6px;margin-bottom:0;font-size:0.8rem"><option value="auto">Auto</option><option value="casual">Casual</option><option value="elegant">Elegant</option><option value="debark">Debark</option></select></div>
+                <div id="debark-engine-container" class="hidden"></div>
+                <div id="normal-schedule-container"><div id="schedule-grid" class="flex-col gap-1"></div><div class="flex-between mt-2"><button id="btn-add-shift" class="btn" style="width:48%;background:var(--green);color:#fff">+ Shift</button><button id="btn-auto-breaks" class="btn btn-outline" style="width:48%;border-color:var(--blue);color:var(--blue)">⚡ Auto-Breaks</button></div></div>
+                <div id="schedule-warn" class="hidden mt-2 p-2" style="background:#fff3cd;border:1px solid #ffc107;border-radius:8px;font-size:0.8rem;color:#856404"></div>
+                <button id="btn-save-schedule" class="btn mt-2" style="background:var(--green);color:#fff">Lock Schedule</button>
+                <button id="btn-export-schedule-text" class="btn btn-outline mt-1">📋 Copy Schedule Text</button>
+            </div>
+        </div>
+
+        <!-- REPORT -->
+        <div id="view-report" class="app-view hidden">
+            <div class="card"><h2>Productivity Report</h2><select id="report-day-select" class="input"></select>
+                <div id="report-photographer-list" class="flex-col gap-1"></div>
+                <div class="flex-between mt-2"><span>Daily Total</span><strong id="report-daily-total">0</strong></div>
+                <button id="btn-log-sales" class="btn btn-outline mt-2 hidden">Log Sales (Completed Voyage)</button>
+            </div>
+        </div>
+
+        <!-- INVENTORY -->
+        <div id="view-inventory" class="app-view hidden">
+            <div class="card"><h2>Inventory</h2><select id="inv-category" class="input"><option value="FreeGifts">Free Gifts</option><option value="VIFP">VIFP</option><option value="Consumables">Consumables</option><option value="Retails">Retails</option></select>
+                <input type="text" id="inv-name" class="input" placeholder="Item name"><div class="flex-between"><input type="number" id="inv-stock" class="input" placeholder="Stock" min="0" style="width:48%"><input type="number" id="inv-par" class="input" placeholder="Par" min="0" style="width:48%"></div>
+                <button id="btn-save-inventory" class="btn btn-blue">Add / Update</button>
+            </div>
+            <div class="card"><h3 class="text-muted mb-2">Stock Status</h3><div id="inventory-list" class="flex-col gap-1"></div></div>
+        </div>
+
         <!-- SETTINGS -->
         <div id="view-settings" class="app-view hidden">
-            <div class="ui-card">
-                <div class="flex-between mb-2"><h2 style="font-size:var(--font-lg)">Settings</h2><button id="btn-close-settings" class="ui-btn ui-btn-outline" style="width:auto;padding:6px 12px">✕</button></div>
-                <div class="ui-card" style="border-color:var(--accent-blue)">
-                    <h3 style="color:var(--accent-blue)">Contract</h3>
-                    <label class="ui-label">Ship Name</label><input type="text" id="cfg-ship-name" class="ui-input" placeholder="e.g. Carnival Sunrise">
-                    <label class="ui-label">Ship Abbreviation (e.g. SN)</label><input type="text" id="cfg-ship-abbr" class="ui-input" placeholder="SN" maxlength="3" style="text-transform:uppercase">
-                    <label class="ui-label">Operational Mode</label><select id="cfg-op-mode" class="ui-input"><option value="print">Print Ship</option><option value="hybrid">Hybrid Ship</option><option value="digital">Digital Ship</option></select>
-                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><div><label class="ui-label">Sign-On</label><input type="date" id="cfg-sign-on" class="ui-input"></div><div><label class="ui-label">Sign-Off</label><input type="date" id="cfg-sign-off" class="ui-input"></div></div>
-                    <button id="btn-save-contract" class="ui-btn ui-btn-blue mt-1">Lock Contract</button>
-                </div>
-                <div class="ui-card" style="border-color:var(--accent-green)">
-                    <h3 style="color:var(--accent-green)">Voyages</h3>
-                    <textarea id="cfg-json-input" class="ui-input" rows="4" placeholder="Paste itinerary JSON..." style="font-family:monospace;font-size:.75rem"></textarea>
-                    <button id="btn-ingest-json" class="ui-btn ui-btn-green" style="font-size:.85rem">Parse JSON</button>
-                    <h4 class="text-sm text-muted mt-2 mb-1">Pending Voyages:</h4><div id="pending-voyages-list" class="flex-col gap-1"></div>
-                </div>
-                <div class="ui-card" style="border-color:var(--text-muted)">
-                    <h3>Operational Times</h3>
-                    <label class="ui-label">Dining Relief</label><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><input type="time" id="cfg-dining-start" class="ui-input" value="17:45"><input type="time" id="cfg-dining-end" class="ui-input" value="20:00"></div>
-                    <label class="ui-label mt-1">Copy Side Busy</label><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><input type="time" id="cfg-copy-busy-start" class="ui-input" value="18:00"><input type="time" id="cfg-copy-busy-end" class="ui-input" value="21:00"></div>
-                    <button id="btn-save-ops-params" class="ui-btn ui-btn-outline mt-1">Save Times</button>
-                </div>
-                <div class="ui-card" style="border-color:var(--accent-yellow)">
-                    <h3 style="color:var(--accent-yellow)">Gallery Hardware</h3>
-                    <select id="cfg-panel-selector" class="ui-input"><option value="A">A</option><option value="B">B</option><option value="C">C</option></select>
-                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><div><label class="ui-label">Panels</label><input type="number" id="cfg-panel-count" class="ui-input" min="1"></div><div><label class="ui-label">Lines/Panel</label><input type="number" id="cfg-panel-lines" class="ui-input" min="1"></div></div>
-                    <label class="ui-label">Capacities</label><div style="display:grid;grid-template-columns:repeat(5,1fr);gap:4px"><div><span class="text-sm text-muted">8x10</span><input type="number" id="cfg-cap-8x10" class="ui-input" style="padding:8px 4px;font-size:.8rem" min="0"></div><div><span class="text-sm text-muted">6x9H</span><input type="number" id="cfg-cap-6x9h" class="ui-input" style="padding:8px 4px;font-size:.8rem" min="0"></div><div><span class="text-sm text-muted">6x9V</span><input type="number" id="cfg-cap-6x9v" class="ui-input" style="padding:8px 4px;font-size:.8rem" min="0"></div><div><span class="text-sm text-muted">5x7H</span><input type="number" id="cfg-cap-5x7h" class="ui-input" style="padding:8px 4px;font-size:.8rem" min="0"></div><div><span class="text-sm text-muted">5x7V</span><input type="number" id="cfg-cap-5x7v" class="ui-input" style="padding:8px 4px;font-size:.8rem" min="0"></div></div>
-                    <input type="text" id="cfg-panel-cats" class="ui-input mt-1" placeholder="Categories"><button id="btn-save-panel" class="ui-btn ui-btn-yellow mt-1">Save Panel</button>
-                </div>
-                <div class="ui-card">
-                    <h3>Data & Update</h3>
-                    <button id="btn-export-backup" class="ui-btn ui-btn-outline" style="font-size:.85rem">📥 Export Backup</button>
-                    <label for="input-restore-backup" class="ui-btn ui-btn-outline" style="font-size:.85rem;cursor:pointer;margin-top:8px;display:block">📤 Restore Backup</label><input type="file" id="input-restore-backup" accept=".json" class="hidden">
-                    <button id="btn-execute-reset" class="ui-btn mt-1" style="background:rgba(255,69,58,.1);color:var(--accent-red);border:1px solid var(--accent-red);font-size:.85rem">⚠️ Hard Reset</button>
-                    <button id="btn-update-app" class="ui-btn ui-btn-blue mt-1" style="font-size:.85rem">🔄 Update App</button>
-                </div>
+            <div class="card"><h2>Settings</h2>
+                <div class="card"><h3 style="color:var(--blue)">Contract</h3><input type="text" id="cfg-ship-name" class="input" placeholder="Ship name"><input type="text" id="cfg-ship-abbr" class="input" placeholder="Abbreviation (e.g. SN)" maxlength="3" style="text-transform:uppercase"><select id="cfg-op-mode" class="input"><option value="print">Print</option><option value="hybrid">Hybrid</option><option value="digital">Digital</option></select><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><input type="date" id="cfg-sign-on" class="input"><input type="date" id="cfg-sign-off" class="input"></div><button id="btn-save-contract" class="btn btn-blue">Save Contract</button></div>
+                <div class="card"><h3 style="color:var(--green)">Voyages</h3><textarea id="cfg-json-input" class="input" rows="4" placeholder="Paste JSON..." style="font-family:monospace;font-size:0.8rem"></textarea><button id="btn-ingest-json" class="btn btn-green">Parse JSON</button><h4 class="text-sm text-muted mt-2">Pending Voyages</h4><div id="pending-voyages-list" class="flex-col gap-1"></div></div>
+                <div class="card"><h3>Operational Times</h3><label class="label">Dining Relief</label><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><input type="time" id="cfg-dining-start" class="input" value="17:45"><input type="time" id="cfg-dining-end" class="input" value="20:00"></div><label class="label mt-1">Copy Side Busy</label><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><input type="time" id="cfg-copy-busy-start" class="input" value="18:00"><input type="time" id="cfg-copy-busy-end" class="input" value="21:00"></div><button id="btn-save-ops" class="btn btn-outline mt-1">Save Times</button></div>
+                <div class="card"><h3 style="color:var(--yellow)">Gallery Hardware</h3><select id="cfg-panel-selector" class="input"><option value="A">A</option><option value="B">B</option><option value="C">C</option></select><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><input type="number" id="cfg-panel-count" class="input" placeholder="Panels" min="1"><input type="number" id="cfg-panel-lines" class="input" placeholder="Lines/panel" min="1"></div><label class="label">Capacities</label><div style="display:grid;grid-template-columns:repeat(5,1fr);gap:4px"><div><input type="number" id="cfg-cap-8x10" class="input" placeholder="8x10" style="padding:6px;font-size:0.8rem"></div><div><input type="number" id="cfg-cap-6x9h" class="input" placeholder="6x9H" style="padding:6px;font-size:0.8rem"></div><div><input type="number" id="cfg-cap-6x9v" class="input" placeholder="6x9V" style="padding:6px;font-size:0.8rem"></div><div><input type="number" id="cfg-cap-5x7h" class="input" placeholder="5x7H" style="padding:6px;font-size:0.8rem"></div><div><input type="number" id="cfg-cap-5x7v" class="input" placeholder="5x7V" style="padding:6px;font-size:0.8rem"></div></div><button id="btn-save-panel" class="btn" style="background:var(--yellow);color:#000">Save Panel</button></div>
+                <div class="card"><h3>Data & Update</h3><button id="btn-export-backup" class="btn btn-outline">📥 Export Backup</button><label for="input-restore-backup" class="btn btn-outline" style="cursor:pointer;margin-top:8px;display:block">📤 Restore Backup</label><input type="file" id="input-restore-backup" accept=".json" class="hidden"><button id="btn-execute-reset" class="btn mt-1" style="background:#fff0f0;color:var(--red);border:1px solid var(--red)">⚠️ Hard Reset</button><button id="btn-update-app" class="btn btn-blue mt-1">🔄 Update App</button></div>
             </div>
         </div>
 
-        <!-- DASHBOARD -->
-        <div id="view-dashboard" class="app-view">
-            <div class="ui-card"><div class="flex-between mb-1"><h2 class="text-muted">Monthly Corporate Pacing</h2><button id="dash-elegant-toggle" class="ui-btn ui-btn-outline" style="width:auto;padding:6px 12px;font-size:.7rem">👔 Elegant</button></div><div class="flex-between"><div id="dash-month-actual" style="font-size:1.6rem;font-weight:700">$0.00</div><div id="dash-month-target" class="text-sm text-muted">Target: $0.00</div></div><div class="progress-bar-bg"><div id="dash-month-progress" class="progress-bar-fill" style="background:var(--accent-blue)"></div></div></div>
-            <div class="ui-card"><h2 class="text-sm text-muted mb-1">Monthly PRYR Pacing</h2><div class="flex-between"><div id="dash-pryr-actual" style="font-size:1.6rem;font-weight:700">$0.00</div><div id="dash-pryr-target" class="text-sm text-muted">PRYR: $0.00</div></div><div class="progress-bar-bg"><div id="dash-pryr-progress" class="progress-bar-fill" style="background:var(--accent-purple)"></div></div></div>
-            <div class="ui-card"><div class="flex-between mb-1"><h2 class="text-muted">Voyage Pacing</h2><span id="dash-voyage-status" class="status-badge" style="background:var(--bg-input)">Pending</span></div><div class="flex-between"><div><span class="text-sm text-muted">Actual GCD</span><div id="dash-actual-gcd" style="font-size:2rem;font-weight:700">$0.00</div></div><div style="text-align:right"><span class="text-sm text-muted">Target GCD</span><div id="dash-target-gcd">$0.00</div></div></div><div id="dash-gcd-variance" class="mt-1 p-2 text-center text-sm text-bold" style="background:var(--bg-input);border-radius:8px">Awaiting Revenue</div><div class="text-sm text-muted mt-1">Run-rate needed: <strong id="dash-run-rate">--</strong>/night</div></div>
-            <div class="ui-card" style="border-color:var(--accent-green)"><h2 class="text-sm text-muted mb-1">Tonight's Manifest</h2><div id="dash-break-manifest" class="text-sm"></div></div>
-            <div class="ui-card"><div class="flex-between mb-1"><h2 class="text-muted">Floor Capacity</h2><button id="btn-toggle-rotation" class="ui-btn ui-btn-outline" style="width:auto;padding:6px 12px;font-size:.7rem">🌙 Late</button></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><div style="padding:8px;background:var(--bg-elevated);border-radius:8px;text-align:center"><span class="text-sm text-muted">Shooters</span><strong id="dash-active-shooters" style="font-size:1.5rem">0</strong></div><div style="padding:8px;background:var(--bg-elevated);border-radius:8px;text-align:center"><span class="text-sm text-muted">Support</span><strong id="dash-support-units" style="font-size:1.5rem">0</strong></div></div></div>
-            <div class="ui-card" style="border-color:var(--accent-blue)"><h3 class="text-sm text-muted mb-1">Notes</h3><textarea id="dash-notes" class="ui-input" rows="2" placeholder="Quick notes..."></textarea></div>
-        </div>
-
-        <!-- CREW -->
-        <div id="view-crew" class="app-view hidden">
-            <div class="ui-card"><div class="flex-between mb-2"><h2>Crew Roster</h2><button id="btn-show-add-crew" class="ui-btn ui-btn-blue" style="width:auto;padding:6px 12px;font-size:.8rem">+ Add</button></div><div id="roster-list-container" class="flex-col gap-1"></div>
-                <div id="modal-crew-profile" class="ui-card hidden mt-2" style="border-color:var(--accent-blue)"><h3 id="modal-crew-title" style="color:var(--accent-blue)">Add Crew</h3><input type="hidden" id="crew-id"><input type="text" id="crew-name" class="ui-input" placeholder="Name"><select id="crew-role" class="ui-input"><option value="Photographer">Photographer</option><option value="Trainee">Trainee</option><option value="Senior">Senior</option><option value="APM">APM</option><option value="Manager">Manager</option><option value="PrintShop">Print Shop</option><option value="LabTechDuty">Lab Tech (IC)</option><option value="LabTechAssist">Asst Lab Tech</option><option value="DreamsStudio">Dreams Studio</option></select><input type="text" id="crew-cabin" class="ui-input" placeholder="Cabin"><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><div><label class="ui-label">Sign-On</label><input type="date" id="crew-sign-on" class="ui-input"></div><div><label class="ui-label">Sign-Off</label><input type="date" id="crew-sign-off" class="ui-input"></div></div><button id="btn-save-crew" class="ui-btn ui-btn-blue mt-1">Save</button><button id="btn-archive-crew" class="ui-btn ui-btn-outline mt-1 hidden" style="color:var(--accent-red);border-color:var(--accent-red)">Archive</button><button id="btn-cancel-crew" class="ui-btn mt-1" style="background:var(--bg-input)">Cancel</button></div>
-            </div>
-            <div class="ui-card"><div class="flex-between mb-2"><h2>Daily Schedule</h2><select id="day-type-override" class="ui-input" style="width:auto;padding:6px;margin-bottom:0;font-size:.75rem"><option value="auto">Auto</option><option value="casual">Casual</option><option value="elegant">Elegant</option><option value="debark">Debark</option></select></div><div id="debark-engine-container" class="hidden"></div><div id="normal-schedule-container"><div id="schedule-grid-container" class="flex-col gap-1"></div><div class="flex-between mt-2"><button id="btn-add-shift" class="ui-btn ui-btn-green" style="width:48%">+ Shift</button><button id="btn-auto-breaks" class="ui-btn ui-btn-outline" style="width:48%;border-color:var(--accent-blue);color:var(--accent-blue)">⚡ Auto-Breaks</button></div></div><div id="schedule-warning-banner" class="hidden mt-2 p-2" style="background:rgba(255,214,10,.1);border:1px solid var(--accent-yellow);border-radius:8px;font-size:.75rem;color:var(--accent-yellow)"></div><button id="btn-save-schedule" class="ui-btn ui-btn-green mt-2">Lock Schedule</button><button id="btn-export-schedule-text" class="ui-btn ui-btn-outline mt-1" style="font-size:.8rem">📋 Copy Schedule Text</button></div>
-        </div>
-
-        <!-- SPACE -->
-        <div id="view-space" class="app-view hidden">
-            <div class="ui-card"><h2>Space Calculator</h2><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><div><label class="ui-label">Format</label><select id="space-format" class="ui-input"><option value="8x10">8x10</option><option value="6x9h">6x9H</option><option value="6x9v">6x9V</option><option value="5x7h">5x7H</option><option value="5x7v">5x7V</option></select></div><div><label class="ui-label">Panel</label><select id="space-target-panel" class="ui-input"><option value="A">A</option><option value="B">B</option><option value="C">C</option></select></div></div><div class="flex-between mb-1"><span class="text-sm text-muted">Production</span><button id="btn-add-space-row" class="ui-btn ui-btn-outline" style="width:auto;padding:4px 8px;font-size:.7rem">+</button></div><div id="space-grid-container" class="flex-col gap-1"></div><button id="btn-calculate-space" class="ui-btn ui-btn-yellow mt-2">Calculate</button><div id="space-output-display" class="hidden mt-2 p-3" style="background:var(--bg-elevated);border-radius:12px;border:1px solid var(--accent-yellow)"></div></div>
-        </div>
-
-        <!-- MONEY -->
-        <div id="view-money" class="app-view hidden">
-            <div class="ui-card" style="border-color:var(--accent-blue)"><h3 id="eod-cruise-day" style="color:var(--accent-blue)">Awaiting Voyage</h3><div class="text-sm text-muted mt-1">Target Gap: <strong id="eod-target-gap">$0.00</strong></div><div class="text-sm text-muted">PRYR: <strong id="eod-pryr-display">$0.00</strong></div><hr style="border:0;border-top:1px dashed var(--border-subtle);margin:12px 0"><div id="eod-revenue-history" class="text-sm" style="max-height:200px;overflow-y:auto"></div></div>
-            <div class="ui-card"><h2 class="text-sm text-muted mb-1">Tonight's Revenue</h2><input type="number" id="eod-total-revenue" class="ui-input" placeholder="Ship Revenue" min="0" step="0.01"><input type="number" id="eod-ds-revenue" class="ui-input" placeholder="DS Revenue" min="0" step="0.01"><div class="flex-between mt-1"><span id="eod-live-gap" class="text-sm text-muted"></span></div><button id="btn-save-revenue" class="ui-btn ui-btn-green mt-2">Lock Revenue</button></div>
-        </div>
-
-        <!-- STOCK -->
-        <div id="view-stock" class="app-view hidden">
-            <div class="ui-card" style="border-color:var(--accent-blue)"><h2 style="color:var(--accent-blue)">Inventory</h2><select id="inv-category" class="ui-input"><option value="Retails">Retails</option><option value="Consumables">Consumables</option><option value="VIFP">VIFP</option><option value="FreeGifts">Free Gifts</option></select><input type="text" id="inv-name" class="ui-input" placeholder="Item"><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><div><label class="ui-label">Stock</label><input type="number" id="inv-stock" class="ui-input" min="0"></div><div><label class="ui-label">Par</label><input type="number" id="inv-par" class="ui-input" min="0"></div></div><button id="btn-save-inventory" class="ui-btn ui-btn-blue mt-1">Log Item</button></div>
-            <div class="ui-card"><h3 class="text-sm text-muted mb-2">Stock Status <span id="stock-low-badge" class="badge-dot hidden" style="position:static;display:inline-block;vertical-align:middle"></span></h3><div id="inventory-list-container" class="flex-col gap-1"></div></div>
-        </div>
-
-        <!-- ACTIVATION MODAL -->
-        <div id="modal-activate-voyage" class="hidden" style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.9);z-index:1000;display:flex;align-items:flex-start;justify-content:center;padding-top:10vh"><div class="ui-card" style="width:90%;max-width:400px;border:1px solid var(--accent-green)"><h2 style="color:var(--accent-green)">Activate <span id="act-voyage-title"></span></h2><div id="act-monthly-target-wrapper" class="hidden mt-1 p-2" style="background:var(--bg-elevated);border-radius:8px"><label class="ui-label">Monthly Target GCD</label><input type="number" id="act-monthly-target" class="ui-input" min="0"><label class="ui-label mt-1">Monthly PRYR GCD (optional)</label><input type="number" id="act-monthly-pryr" class="ui-input" min="0"></div><input type="number" id="act-guests" class="ui-input mt-1" placeholder="Guests" min="1"><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><input type="number" id="act-target-gcd" class="ui-input" placeholder="Target GCD" min="0" step="0.01"><input type="number" id="act-pryr-gcd" class="ui-input" placeholder="PRYR GCD" min="0" step="0.01"></div><div class="flex-between mt-2"><button id="btn-confirm-activation" class="ui-btn ui-btn-green" style="width:48%">Activate</button><button id="btn-cancel-activation" class="ui-btn ui-btn-outline" style="width:48%">Cancel</button></div></div></div>
+        <!-- CREW PROFILE MODAL (hidden) -->
+        <div id="modal-crew-profile" class="hidden" style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:1000;display:flex;align-items:center;justify-content:center"><div class="card" style="width:90%;max-width:400px"><h3 id="modal-crew-title">Add Crew</h3><input type="hidden" id="crew-id"><input type="text" id="crew-name" class="input" placeholder="Name"><select id="crew-role" class="input"><option value="Photographer">Photographer</option><option value="Trainee">Trainee</option><option value="Senior">Senior</option><option value="APM">APM</option><option value="Manager">Manager</option><option value="PrintShop">Print Shop</option><option value="LabTechDuty">Lab Tech (IC)</option><option value="LabTechAssist">Asst Lab Tech</option><option value="DreamsStudio">Dreams Studio</option></select><input type="text" id="crew-cabin" class="input" placeholder="Cabin"><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><input type="date" id="crew-sign-on" class="input"><input type="date" id="crew-sign-off" class="input"></div><input type="number" id="crew-photo-num" class="input" placeholder="Photographer Number" min="1"><div class="flex-between mt-2"><button id="btn-save-crew" class="btn btn-blue" style="width:48%">Save</button><button id="btn-cancel-crew" class="btn btn-outline" style="width:48%">Cancel</button></div><button id="btn-archive-crew" class="btn btn-outline mt-1 hidden" style="color:var(--red);border-color:var(--red)">Archive</button></div></div>
+        <!-- ACTIVATE VOYAGE MODAL -->
+        <div id="modal-activate-voyage" class="hidden" style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:1000;display:flex;align-items:center;justify-content:center"><div class="card" style="width:90%;max-width:400px"><h2>Activate <span id="act-voyage-title"></span></h2><div id="act-monthly-wrapper" class="hidden mt-2 p-2" style="background:#f0f0f0;border-radius:8px"><label class="label">Monthly Target GCD</label><input type="number" id="act-monthly-target" class="input" min="0"><label class="label">Monthly PRYR GCD (opt)</label><input type="number" id="act-monthly-pryr" class="input" min="0"></div><input type="number" id="act-guests" class="input mt-1" placeholder="Guests" min="1"><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><input type="number" id="act-target-gcd" class="input" placeholder="Target GCD" min="0" step="0.01"><input type="number" id="act-pryr-gcd" class="input" placeholder="PRYR GCD" min="0" step="0.01"></div><div class="flex-between mt-2"><button id="btn-confirm-activation" class="btn btn-green" style="width:48%">Activate</button><button id="btn-cancel-activation" class="btn btn-outline" style="width:48%">Cancel</button></div></div></div>
     </main>
     <nav id="bottom-nav">
-        <button class="nav-btn active" data-view="dashboard"><span>📊</span>Home</button>
-        <button class="nav-btn" data-view="crew"><span>👥</span>Crew</button>
-        <button class="nav-btn" data-view="space"><span>📐</span>Space</button>
-        <button class="nav-btn" data-view="money"><span>💰</span>Money</button>
-        <button class="nav-btn" data-view="stock"><span>📦</span>Stock<span id="stock-nav-dot" class="badge-dot hidden" style="top:0;right:5px"></span></button>
+        <button class="nav-btn active" data-view="home"><span>🏠</span>Home</button>
+        <button class="nav-btn" data-view="schedule"><span>📅</span>Schedule</button>
+        <button class="nav-btn" data-view="report"><span>📋</span>Report</button>
+        <button class="nav-btn" data-view="inventory"><span>📦</span>Stock</button>
+        <button class="nav-btn" data-view="settings"><span>⚙️</span>Settings</button>
     </nav>
-
     <script>
-        // ========== FULL APP LOGIC (compressed but complete) ==========
-        const toast=document.getElementById('toast');
-        function showToast(m,d=2000){toast.textContent=m;toast.classList.add('show');setTimeout(()=>toast.classList.remove('show'),d)}
-        const DB_NAME='apm_engine_v3',DB_VERSION=3;let dbInstance;
+        // ========== UTILS ==========
+        const toast = document.getElementById('toast');
+        function showToast(msg, dur=2000){ toast.textContent=msg; toast.classList.add('show'); setTimeout(()=>toast.classList.remove('show'), dur); }
+        function timeToMin(t){ const [h,m]=t.split(':').map(Number); return h*60+m; }
+        function minToTime(m){ const h=Math.floor(m/60), mm=m%60; return `${String(h).padStart(2,'0')}:${String(mm).padStart(2,'0')}`; }
+
+        // ========== DATABASE ==========
+        const DB_NAME='apm_engine_v4', DB_VERSION=1; let dbInstance;
         const db={
-            init(){return new Promise((resolve,reject)=>{const req=indexedDB.open(DB_NAME,DB_VERSION);req.onupgradeneeded=e=>{const d=e.target.result;
-                if(!d.objectStoreNames.contains('contracts'))d.createObjectStore('contracts',{keyPath:'id'});
-                if(!d.objectStoreNames.contains('months'))d.createObjectStore('months',{keyPath:'id'});
-                if(!d.objectStoreNames.contains('voyages')){const s=d.createObjectStore('voyages',{keyPath:'voyageId'});s.createIndex('status','status');s.createIndex('monthId','monthId')}
-                if(!d.objectStoreNames.contains('itineraries')){const s=d.createObjectStore('itineraries',{keyPath:'id'});s.createIndex('voyageId','voyageId')}
-                if(!d.objectStoreNames.contains('roster')){const s=d.createObjectStore('roster',{keyPath:'id',autoIncrement:true});s.createIndex('status','status')}
-                if(!d.objectStoreNames.contains('schedules'))d.createObjectStore('schedules',{keyPath:'date'});
-                if(!d.objectStoreNames.contains('gallery_config'))d.createObjectStore('gallery_config',{keyPath:'panelType'});
-                if(!d.objectStoreNames.contains('daily_revenue')){const s=d.createObjectStore('daily_revenue',{keyPath:'id'});s.createIndex('voyageId','voyageId')}
-                if(!d.objectStoreNames.contains('inventory')){const s=d.createObjectStore('inventory',{keyPath:'id',autoIncrement:true});s.createIndex('category','category')}
-            };req.onsuccess=e=>{dbInstance=e.target.result;resolve(dbInstance)};req.onerror=e=>reject(e.target.error)})},
+            init(){return new Promise((resolve,reject)=>{const req=indexedDB.open(DB_NAME,DB_VERSION);req.onupgradeneeded=e=>{const d=e.target.result;['contracts','months','voyages','itineraries','roster','schedules','gallery_config','daily_revenue','inventory','capture_counts','sales'].forEach(s=>{if(!d.objectStoreNames.contains(s))d.createObjectStore(s,{keyPath:'id'})})};req.onsuccess=e=>{dbInstance=e.target.result;resolve(dbInstance)};req.onerror=e=>reject(e.target.error)})},
             put(s,d){return new Promise((res,rej)=>{const t=dbInstance.transaction(s,'readwrite');const r=t.objectStore(s).put(d);r.onsuccess=()=>res(r.result);r.onerror=e=>rej(e.target.error)})},
             get(s,k){return new Promise((res,rej)=>{const t=dbInstance.transaction(s,'readonly');const r=t.objectStore(s).get(k);r.onsuccess=()=>res(r.result);r.onerror=e=>rej(e.target.error)})},
             getAll(s){return new Promise((res,rej)=>{const t=dbInstance.transaction(s,'readonly');const r=t.objectStore(s).getAll();r.onsuccess=()=>res(r.result);r.onerror=e=>rej(e.target.error)})},
             getAllByIndex(s,i,v){return new Promise((res,rej)=>{const t=dbInstance.transaction(s,'readonly');const r=t.objectStore(s).index(i).getAll(v);r.onsuccess=()=>res(r.result);r.onerror=e=>rej(e.target.error)})},
-            clearStore(s){return new Promise((res,rej)=>{const t=dbInstance.transaction(s,'readwrite');const r=t.objectStore(s).clear();r.onsuccess=()=>res();r.onerror=e=>rej(e.target.error)})},
+            clearStore(s){return new Promise((res,rej)=>{const t=dbInstance.transaction(s,'readwrite');const r=t.objectStore(s).clear();r.onsuccess=()=>res();r.onerror=e=>rej(e.target.error)})}
         };
-        const state={contractId:null,voyageId:null,mode:'print',abbr:'',isLateNight:false,opsParams:{diningStart:'17:45',diningEnd:'20:00',copyBusyStart:'18:00',copyBusyEnd:'21:00'},scheduleHistory:[],notes:''};
+
+        // ========== STATE ==========
+        const state={contractId:null, voyageId:null, mode:'print', abbr:'', ops:{diningStart:'17:45',diningEnd:'20:00',copyBusyStart:'18:00',copyBusyEnd:'21:00'}, isLateNight:false, checklist:[], notes:'', scheduleHistory:[]};
+
+        // ========== NAVIGATION ==========
         function switchView(viewName){
             document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
-            const activeBtn=document.querySelector(`[data-view="${viewName}"]`);
-            if(activeBtn)activeBtn.classList.add('active');
+            const btn=document.querySelector(`[data-view="${viewName}"]`);
+            if(btn)btn.classList.add('active');
             document.querySelectorAll('.app-view').forEach(v=>v.classList.add('hidden'));
-            const viewEl=document.getElementById(`view-${viewName}`);
-            if(viewEl)viewEl.classList.remove('hidden');
-            if(viewName==='money')renderMoneyView();
-            if(viewName==='dashboard')renderDashboard();
-            if(viewName==='crew')renderCrewScheduleView();
-            if(viewName==='stock')renderStockView();
+            const el=document.getElementById(`view-${viewName}`);
+            if(el)el.classList.remove('hidden');
+            if(viewName==='home')renderHome();
+            if(viewName==='schedule')renderScheduleView();
+            if(viewName==='report')renderReportView();
+            if(viewName==='inventory')renderInventoryView();
         }
         document.querySelectorAll('.nav-btn').forEach(b=>b.addEventListener('click',()=>switchView(b.dataset.view)));
-        document.getElementById('btn-open-settings').addEventListener('click',()=>{document.querySelectorAll('.app-view').forEach(v=>v.classList.add('hidden'));document.getElementById('view-settings').classList.remove('hidden');document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'))});
-        document.getElementById('btn-close-settings').addEventListener('click',()=>switchView('dashboard'));
-        document.getElementById('btn-update-app').addEventListener('click',async()=>{if(navigator.serviceWorker){const regs=await navigator.serviceWorker.getRegistrations();for(let r of regs)await r.unregister()}caches.keys().then(keys=>keys.forEach(k=>caches.delete(k)));showToast('Updating...');setTimeout(()=>window.location.reload(true),500)});
-        document.getElementById('btn-save-ops-params').addEventListener('click',()=>{state.opsParams.diningStart=document.getElementById('cfg-dining-start').value;state.opsParams.diningEnd=document.getElementById('cfg-dining-end').value;state.opsParams.copyBusyStart=document.getElementById('cfg-copy-busy-start').value;state.opsParams.copyBusyEnd=document.getElementById('cfg-copy-busy-end').value;showToast('Times saved.')});
-        // Contract save
-        document.getElementById('btn-save-contract').addEventListener('click',async()=>{
-            const ship=document.getElementById('cfg-ship-name').value.trim(),abbr=document.getElementById('cfg-ship-abbr').value.trim().toUpperCase(),mode=document.getElementById('cfg-op-mode').value,signOn=document.getElementById('cfg-sign-on').value,signOff=document.getElementById('cfg-sign-off').value;
-            if(!ship||!signOn||!signOff)return showToast('Fill all contract fields.');
-            await db.put('contracts',{id:'CT_MAIN',shipName:ship,abbr,mode,signOn,signOff,status:'active'});
-            state.contractId='CT_MAIN';state.mode=mode;state.abbr=abbr;
-            document.getElementById('header-voyage-id').innerText=`${ship} - ${mode.toUpperCase()}`;
-            showToast('Contract locked.');
-        });
-        // Voyage ingestion
-        async function renderPendingVoyages(){
-            if(!state.contractId)return;
-            const list=document.getElementById('pending-voyages-list'),pending=await db.getAllByIndex('voyages','status','pending');
-            list.innerHTML='';
-            if(!pending.length){list.innerHTML='<div class="text-sm text-muted">No pending voyages.</div>';return;}
-            pending.sort((a,b)=>new Date(a.startDate)-new Date(b.startDate));
-            pending.forEach(v=>{
-                const row=document.createElement('div');
-                row.style.cssText='display:flex;justify-content:space-between;align-items:center;background:var(--bg-input);padding:8px;border-radius:6px;';
-                row.innerHTML=`<div><div class="text-bold">${v.voyageId}</div><div class="text-sm text-muted">${v.startDate} to ${v.endDate}</div></div><button class="ui-btn ui-btn-outline btn-activate" data-vid="${v.voyageId}" style="width:auto;padding:4px 8px;font-size:.75rem">Activate</button>`;
-                row.querySelector('.btn-activate').addEventListener('click',e=>triggerActivation(e.target.dataset.vid));
-                list.appendChild(row);
-            });
-        }
-        document.getElementById('btn-ingest-json').addEventListener('click',async()=>{
-            if(!state.contractId)return showToast('Lock contract first.');
-            const str=document.getElementById('cfg-json-input').value.trim();
-            if(!str)return showToast('Paste JSON.');
-            try{
-                const arr=JSON.parse(str);
-                if(!Array.isArray(arr))throw new Error('Array expected');
-                for(const v of arr){
-                    const monthId=v.endDate.substring(0,7),len=v.itinerary.length;
-                    const elegantNights=len<=5?[1]:[1,len-2];
-                    for(let i=0;i<len;i++){
-                        const day=v.itinerary[i];
-                        await db.put('itineraries',{id:`${v.voyageId}_${day.date}`,voyageId:v.voyageId,date:day.date,port:day.port,elegant:elegantNights.includes(i)});
-                    }
-                    await db.put('voyages',{voyageId:v.voyageId,contractId:state.contractId,startDate:v.startDate,endDate:v.endDate,length:len,monthId,status:'pending',guests:null,targetGcd:null,pryrGcd:null});
-                }
-                document.getElementById('cfg-json-input').value='';
-                showToast(`Ingested ${arr.length} voyages.`);
-                renderPendingVoyages();
-            }catch(e){showToast('Invalid JSON. Expect array of voyages.')}
-        });
-        let pendingActVid=null;
-        function triggerActivation(vid){
-            pendingActVid=vid;
-            document.getElementById('act-voyage-title').innerText=vid;
-            db.get('voyages',vid).then(v=>{
-                db.get('months',v.monthId).then(m=>{
-                    const wrap=document.getElementById('act-monthly-target-wrapper');
-                    if(m)wrap.classList.add('hidden');else wrap.classList.remove('hidden');
-                    document.getElementById('modal-activate-voyage').classList.remove('hidden');
-                });
-            });
-        }
-        document.getElementById('btn-cancel-activation').addEventListener('click',()=>{document.getElementById('modal-activate-voyage').classList.add('hidden');pendingActVid=null});
-        document.getElementById('btn-confirm-activation').addEventListener('click',async()=>{
-            if(!pendingActVid)return;
-            const v=await db.get('voyages',pendingActVid);
-            const guests=parseInt(document.getElementById('act-guests').value),targetGcd=parseFloat(document.getElementById('act-target-gcd').value),pryrGcd=parseFloat(document.getElementById('act-pryr-gcd').value);
-            if(isNaN(guests)||isNaN(targetGcd))return showToast('Guests & target GCD required.');
-            const wrap=document.getElementById('act-monthly-target-wrapper');
-            if(!wrap.classList.contains('hidden')){
-                const mt=parseFloat(document.getElementById('act-monthly-target').value),mp=parseFloat(document.getElementById('act-monthly-pryr').value)||null;
-                if(isNaN(mt))return showToast('Monthly target required.');
-                await db.put('months',{id:v.monthId,targetGcd:mt,pryrGcd:mp});
-            }
-            const active=await db.getAllByIndex('voyages','status','active');
-            for(const av of active){av.status='completed';await db.put('voyages',av)}
-            v.guests=guests;v.targetGcd=targetGcd;v.pryrGcd=isNaN(pryrGcd)?null:pryrGcd;v.status='active';
-            await db.put('voyages',v);
-            state.voyageId=v.voyageId;
-            document.getElementById('modal-activate-voyage').classList.add('hidden');
-            document.getElementById('view-settings').classList.add('hidden');
-            showToast(`Voyage ${v.voyageId} live.`);
-            renderDashboard();
+        document.getElementById('btn-open-settings').addEventListener('click',()=>switchView('settings'));
+
+        // ========== BOOT ==========
+        window.addEventListener('DOMContentLoaded',async()=>{
+            await db.init();
+            const contract=(await db.getAll('contracts')).find(c=>c.status==='active');
+            if(contract){
+                state.contractId=contract.id; state.mode=contract.mode; state.abbr=contract.abbr||'';
+                document.getElementById('header-voyage-id').innerText=`${contract.shipName} - ${contract.mode}`;
+                const activeV=(await db.getAll('voyages')).find(v=>v.status==='active');
+                if(activeV){state.voyageId=activeV.voyageId; renderHome();} else switchView('settings');
+            } else switchView('settings');
         });
 
-        // Dashboard rendering
-        async function renderDashboard(){
-            if(!state.voyageId)return;
-            const v=await db.get('voyages',state.voyageId);
-            if(!v||!v.guests)return;
-            const start=new Date(v.startDate),end=new Date(v.endDate),days=Math.max(1,(end-start)/86400000),totalTarget=v.guests*v.targetGcd*days;
-            const revs=await db.getAllByIndex('daily_revenue','voyageId',v.voyageId);
-            let shipRev=0,dsRev=0;revs.forEach(r=>{shipRev+=r.shipRevenue;dsRev+=r.dsRevenue});
-            document.getElementById('dash-actual-gcd').innerText=`$${shipRev.toLocaleString(undefined,{minimumFractionDigits:2})}`;
-            document.getElementById('dash-target-gcd').innerText=`$${totalTarget.toLocaleString(undefined,{minimumFractionDigits:2})}`;
-            const varBox=document.getElementById('dash-gcd-variance');
-            if(revs.length===0){varBox.innerText='Awaiting Revenue';varBox.style.background='var(--bg-input)';varBox.style.color='var(--text-muted)'}
-            else if(shipRev>=totalTarget){varBox.innerText=`OVER (+ $${(shipRev-totalTarget).toLocaleString(undefined,{minimumFractionDigits:2})})`;varBox.style.background='var(--accent-green)';varBox.style.color='#000'}
-            else{varBox.innerText=`DEFICIT (- $${(totalTarget-shipRev).toLocaleString(undefined,{minimumFractionDigits:2})})`;varBox.style.background='var(--accent-red)';varBox.style.color='#fff'}
-            document.getElementById('dash-voyage-status').innerText=v.voyageId;
-            document.getElementById('dash-voyage-status').style.background='var(--accent-green)';document.getElementById('dash-voyage-status').style.color='#000';
-            const remaining=days-revs.length;
-            if(remaining>0){document.getElementById('dash-run-rate').innerText=`$${( (totalTarget-shipRev)/remaining ).toLocaleString(undefined,{minimumFractionDigits:2})}`}
-            else document.getElementById('dash-run-rate').innerText='--';
-            if(v.monthId){
-                const month=await db.get('months',v.monthId);
-                if(month){
-                    const monthVoyages=await db.getAllByIndex('voyages','monthId',v.monthId);
-                    let monthRev=0; for(const mv of monthVoyages){const r=await db.getAllByIndex('daily_revenue','voyageId',mv.voyageId);r.forEach(d=>monthRev+=d.shipRevenue)}
-                    document.getElementById('dash-month-actual').innerText=`$${monthRev.toLocaleString(undefined,{minimumFractionDigits:2})}`;
-                    document.getElementById('dash-month-target').innerText=`Target: $${month.targetGcd.toLocaleString(undefined,{minimumFractionDigits:2})}`;
-                    let pct=Math.min(100,(monthRev/month.targetGcd)*100);
-                    document.getElementById('dash-month-progress').style.width=`${pct}%`;
-                    if(month.pryrGcd){
-                        document.getElementById('dash-pryr-target').innerText=`PRYR: $${month.pryrGcd.toLocaleString(undefined,{minimumFractionDigits:2})}`;
-                        document.getElementById('dash-pryr-actual').innerText=`$${monthRev.toLocaleString(undefined,{minimumFractionDigits:2})}`;
-                        let ppct=Math.min(100,(monthRev/month.pryrGcd)*100);
-                        document.getElementById('dash-pryr-progress').style.width=`${ppct}%`;
+        // ========== HOME ==========
+        async function renderHome(){
+            // checklist
+            const defaultItems=['Check schedule','Verify backdrops','Assign breaks','Mid-night capture check','Enter revenue'];
+            const today=new Date().toISOString().split('T')[0];
+            const saved=JSON.parse(localStorage.getItem('checklist_'+today)||'[]');
+            const list=document.getElementById('checklist-container');
+            list.innerHTML=defaultItems.map((item,i)=>`<label class="flex-between"><span>${item}</span><input type="checkbox" ${saved[i]?'checked':''} data-idx="${i}"></label>`).join('');
+            list.querySelectorAll('input').forEach(inp=>inp.addEventListener('change',()=>{
+                const arr=defaultItems.map((_,j)=>list.querySelector(`input[data-idx="${j}"]`)?.checked||false);
+                localStorage.setItem('checklist_'+today,JSON.stringify(arr));
+            }));
+            // revenue bars
+            if(state.voyageId){
+                const v=await db.get('voyages',state.voyageId);
+                if(v&&v.guests){
+                    const start=new Date(v.startDate), end=new Date(v.endDate), days=Math.max(1,(end-start)/86400000);
+                    const totalTarget=v.guests*v.targetGcd*days;
+                    const revs=await db.getAllByIndex('daily_revenue','voyageId',state.voyageId);
+                    let shipRev=0; revs.forEach(r=>shipRev+=r.shipRevenue);
+                    const pct=Math.min(100,(shipRev/totalTarget)*100);
+                    document.getElementById('home-voyage-gcd').innerText=`$${shipRev.toLocaleString()}/$${totalTarget.toLocaleString()}`;
+                    document.getElementById('home-voyage-bar').style.width=pct+'%';
+                    document.getElementById('home-total-rev').innerText=`$${shipRev.toLocaleString()}`;
+                    // monthly
+                    if(v.monthId){
+                        const month=await db.get('months',v.monthId);
+                        if(month){
+                            const monthVoyages=await db.getAllByIndex('voyages','monthId',v.monthId);
+                            let monthRev=0; for(const mv of monthVoyages){const r=await db.getAllByIndex('daily_revenue','voyageId',mv.voyageId); r.forEach(d=>monthRev+=d.shipRevenue);}
+                            document.getElementById('home-month-gcd').innerText=`$${monthRev.toLocaleString()}/$${month.targetGcd.toLocaleString()}`;
+                            document.getElementById('home-month-bar').style.width=Math.min(100,(monthRev/month.targetGcd)*100)+'%';
+                            if(month.pryrGcd){
+                                document.getElementById('home-pryr-gcd').innerText=`$${monthRev.toLocaleString()}/$${month.pryrGcd.toLocaleString()}`;
+                                document.getElementById('home-pryr-bar').style.width=Math.min(100,(monthRev/month.pryrGcd)*100)+'%';
+                            }
+                        }
                     }
+                    // manifest
+                    const sched=await db.get('schedules',today);
+                    const man=document.getElementById('home-manifest');
+                    if(sched&&sched.shifts) man.innerHTML=sched.shifts.map(s=>`<div><strong>${s.crewName}</strong> ${(s.breaks||[]).join(', ')}</div>`).join('')||'No breaks';
+                    else man.innerHTML='<span class="text-muted">Not locked</span>';
                 }
             }
-            const today=new Date().toISOString().split('T')[0];
-            const sched=await db.get('schedules',today);
-            const manifest=document.getElementById('dash-break-manifest');
-            if(!sched||!sched.shifts){manifest.innerHTML='<span class="text-muted text-sm">Schedule not locked.</span>'}
-            else{
-                let html='';
-                sched.shifts.forEach(sh=>{
-                    const crew=sh.crewName||'Unknown';
-                    const breaks=(sh.breaks||[]).join(', ');
-                    const copy=(sh.copySlots||[]).map(s=>`${s.start}-${s.end}`).join(', ');
-                    html+=`<div class="flex-between p-2 mb-1" style="background:var(--bg-input);border-radius:6px"><strong>${crew}</strong><div><span class="text-sm">Breaks: ${breaks||'None'}</span>${copy?`<br><span class="text-sm">Copy: ${copy}</span>`:''}</div></div>`;
-                });
-                manifest.innerHTML=html||'No shifts.';
-            }
-            await calcFloorCapacity();
-            document.getElementById('dash-notes').value=state.notes;
-            document.getElementById('dash-notes').oninput=e=>state.notes=e.target.value;
-        }
-        async function calcFloorCapacity(){
-            const crew=await db.getAllByIndex('roster','status','active');
-            let shooters=0,support=0;
-            crew.forEach(c=>{
-                if(['Photographer','Trainee','Senior'].includes(c.role))shooters++;
-                else if(['Manager','PrintShop','LabTechDuty','DreamsStudio'].includes(c.role))support++;
-                if(['APM','LabTechAssist'].includes(c.role))state.isLateNight?support++:shooters++;
-            });
-            document.getElementById('dash-active-shooters').innerText=shooters;
-            document.getElementById('dash-support-units').innerText=support;
-        }
-        document.getElementById('btn-toggle-rotation').addEventListener('click',async()=>{state.isLateNight=!state.isLateNight;document.getElementById('btn-toggle-rotation').innerText=state.isLateNight?'☀️ Day':'🌙 Late';await calcFloorCapacity()});
-        document.getElementById('dash-elegant-toggle').addEventListener('click',async()=>{
-            if(!state.voyageId)return;
-            const today=new Date().toISOString().split('T')[0];
-            const it=await db.getAllByIndex('itineraries','voyageId',state.voyageId);
-            const day=it.find(d=>d.date===today);
-            if(day){day.elegant=!day.elegant;await db.put('itineraries',day);showToast(`Elegant ${day.elegant?'ON':'OFF'}`)}
-        });
-
-        // Roster
-        const rosterUI={list:document.getElementById('roster-list-container'),modal:document.getElementById('modal-crew-profile'),btnAdd:document.getElementById('btn-show-add-crew')};
-        rosterUI.btnAdd.addEventListener('click',()=>{resetCrewForm();rosterUI.modal.classList.remove('hidden')});
-        document.getElementById('btn-cancel-crew').addEventListener('click',()=>rosterUI.modal.classList.add('hidden'));
-        function resetCrewForm(){
-            document.getElementById('crew-id').value='';document.getElementById('crew-name').value='';document.getElementById('crew-role').value='Photographer';
-            document.getElementById('crew-cabin').value='';document.getElementById('crew-sign-on').value='';document.getElementById('crew-sign-off').value='';
-            document.getElementById('modal-crew-title').innerText='Add Crew';
-            document.getElementById('btn-archive-crew').classList.add('hidden');
-        }
-        document.getElementById('btn-save-crew').addEventListener('click',async()=>{
-            const name=document.getElementById('crew-name').value.trim();
-            if(!name)return showToast('Name required.');
-            const data={name,role:document.getElementById('crew-role').value,cabin:document.getElementById('crew-cabin').value,signOn:document.getElementById('crew-sign-on').value,signOff:document.getElementById('crew-sign-off').value,status:'active'};
-            const id=document.getElementById('crew-id').value;
-            if(id)data.id=parseInt(id);
-            await db.put('roster',data);
-            rosterUI.modal.classList.add('hidden');
-            loadRoster();
-        });
-        document.getElementById('btn-archive-crew').addEventListener('click',async()=>{
-            const id=parseInt(document.getElementById('crew-id').value);
-            if(confirm('Archive crew?')){const c=await db.get('roster',id);c.status='archived';await db.put('roster',c);rosterUI.modal.classList.add('hidden');loadRoster()}
-        });
-        async function loadRoster(){
-            const active=await db.getAllByIndex('roster','status','active');
-            rosterUI.list.innerHTML='';
-            active.forEach(c=>{
-                const card=document.createElement('div');
-                card.style.cssText='background:var(--bg-elevated);padding:12px;border-radius:8px;border-left:4px solid var(--accent-blue);cursor:pointer';
-                card.innerHTML=`<div class="flex-between"><div><div class="text-bold">${c.name}</div><div class="text-sm text-muted">${c.role} | Cabin: ${c.cabin||'N/A'}</div></div></div>`;
-                card.addEventListener('click',()=>{
-                    document.getElementById('crew-id').value=c.id;document.getElementById('crew-name').value=c.name;
-                    document.getElementById('crew-role').value=c.role;document.getElementById('crew-cabin').value=c.cabin||'';
-                    document.getElementById('crew-sign-on').value=c.signOn||'';document.getElementById('crew-sign-off').value=c.signOff||'';
-                    document.getElementById('modal-crew-title').innerText='Edit Crew';
-                    document.getElementById('btn-archive-crew').classList.remove('hidden');
-                    rosterUI.modal.classList.remove('hidden');
-                });
-                rosterUI.list.appendChild(card);
-            });
+            document.getElementById('home-notes').value=state.notes;
+            document.getElementById('home-notes').addEventListener('input',e=>state.notes=e.target.value);
         }
 
-        // Schedule helper
-        async function getActiveCrewOptions(){
-            const active=await db.getAllByIndex('roster','status','active');
-            return active.map(c=>`<option value="${c.id}">${c.name} (${c.role})</option>`).join('');
-        }
-        async function getEffectiveDayType(){
+        // ========== SCHEDULE ==========
+        async function getDayType(){
             const override=document.getElementById('day-type-override').value;
             if(override!=='auto')return override;
             if(!state.voyageId)return'casual';
-            const v=await db.get('voyages',state.voyageId);
-            if(!v)return'casual';
+            const v=await db.get('voyages',state.voyageId); if(!v)return'casual';
             const today=new Date().toISOString().split('T')[0];
             const it=await db.getAllByIndex('itineraries','voyageId',v.voyageId);
             if(!it.length)return'casual';
@@ -405,100 +232,438 @@
             const td=it.find(d=>d.date===today);
             return(td&&td.elegant)?'elegant':'casual';
         }
-
-        // Normal schedule builder
+        async function renderScheduleView(){
+            const dt=await getDayType();
+            const debarkContainer=document.getElementById('debark-engine-container');
+            const normal=document.getElementById('normal-schedule-container');
+            if(dt==='debark'){
+                debarkContainer.classList.remove('hidden'); normal.classList.add('hidden');
+                await renderDebarkUI();
+            }else{
+                debarkContainer.classList.add('hidden'); normal.classList.remove('hidden');
+                document.getElementById('schedule-grid').innerHTML='<div class="text-sm text-muted">Add shifts.</div>';
+            }
+        }
+        // Normal schedule builder (add shift, auto-breaks, save, export) – full implementation inline
         document.getElementById('btn-add-shift').addEventListener('click',async()=>{
-            const container=document.getElementById('schedule-grid-container');
-            const options=await getActiveCrewOptions();
-            const row=document.createElement('div');
-            row.className='schedule-row ui-card';
-            row.innerHTML=`<select class="ui-input sched-crew">${options}</select><input type="time" class="ui-input sched-start" value="17:00"><input type="text" class="ui-input sched-loc" placeholder="Location"><button class="btn-remove-shift ui-btn ui-btn-red" style="width:auto;padding:4px">✕</button>`;
-            container.appendChild(row);
-            row.querySelector('.btn-remove-shift').addEventListener('click',()=>row.remove());
+            const grid=document.getElementById('schedule-grid');
+            const crew=await db.getAllByIndex('roster','status','active');
+            const options=crew.map(c=>`<option value="${c.id}">${c.name} (${c.role})</option>`).join('');
+            const row=document.createElement('div'); row.className='schedule-row card flex-between';
+            row.innerHTML=`<select class="sched-crew input" style="width:50%">${options}</select><input type="time" class="sched-start input" style="width:30%" value="17:00"><input type="text" class="sched-loc input" style="width:30%" placeholder="Loc"><button class="btn-remove btn" style="width:auto;padding:4px;background:var(--red);color:#fff">✕</button>`;
+            grid.appendChild(row);
+            row.querySelector('.btn-remove').addEventListener('click',()=>row.remove());
         });
         document.getElementById('btn-auto-breaks').addEventListener('click',async()=>{
             const rows=document.querySelectorAll('.schedule-row');
             if(!rows.length)return showToast('Add shifts first.');
-            const dayType=await getEffectiveDayType();
-            // Auto-break logic (assigned using simple greedy, respecting max 2 breaks per slot)
-            // (Complete implementation included, omitted for brevity in this compressed listing but present in the actual file)
-            showToast('Auto-breaks applied.');
+            const dt=await getDayType();
+            // simple break assignment
+            const breakSlots=[]; for(let h=17;h<=21;h++)for(let m=0;m<60;m+=30){if(h===17&&m<30)continue; if(h===21&&m>0)continue; breakSlots.push(`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`);}
+            const breakCounts={};
+            rows.forEach(row=>{
+                const start=row.querySelector('.sched-start').value;
+                let needed=0;
+                if(dt==='elegant') needed=1;
+                else if(start==='17:00') needed=1;
+                else if(start==='16:00') needed=2;
+                const breaks=[];
+                for(const slot of breakSlots){
+                    if(breaks.length>=needed)break;
+                    if((breakCounts[slot]||0)>=2)continue;
+                    breaks.push(slot); breakCounts[slot]=(breakCounts[slot]||0)+1;
+                }
+                row.dataset.breaks=JSON.stringify(breaks);
+            });
+            showToast('Auto-breaks assigned.');
         });
         document.getElementById('btn-save-schedule').addEventListener('click',async()=>{
             const today=new Date().toISOString().split('T')[0];
+            const rows=document.querySelectorAll('.schedule-row');
             const shifts=[];
-            document.querySelectorAll('.schedule-row').forEach(row=>{
-                const crew=row.querySelector('.sched-crew').value;
-                if(crew)shifts.push({crewId:parseInt(crew),breaks:[],copySlots:[]});
-            });
-            // Save to DB and update state history for undo
-            await db.put('schedules',{date:today,shifts});
-            state.scheduleHistory.push({date:today,shifts});
+            for(const row of rows){
+                const crewId=parseInt(row.querySelector('.sched-crew').value);
+                if(!crewId)continue;
+                const crew=await db.get('roster',crewId);
+                shifts.push({
+                    crewId,
+                    crewName:crew?crew.name:'Unknown',
+                    time:row.querySelector('.sched-start')?.value||'',
+                    loc:row.querySelector('.sched-loc')?.value||'',
+                    breaks:JSON.parse(row.dataset.breaks||'[]'),
+                });
+            }
+            if(!shifts.length)return showToast('No shifts.');
+            const prev=await db.get('schedules',today);
+            if(prev)state.scheduleHistory.push(prev);
             if(state.scheduleHistory.length>3)state.scheduleHistory.shift();
+            await db.put('schedules',{date:today,shifts});
             showToast('Schedule locked.');
-            renderDashboard();
+            renderHome();
         });
-        document.getElementById('btn-export-schedule-text').addEventListener('click',()=>{
-            const shifts=document.querySelectorAll('.schedule-row');
-            let text='';
-            shifts.forEach(r=>{
-                const crew=r.querySelector('.sched-crew option:checked')?.textContent||'Unknown';
-                const time=r.querySelector('.sched-start')?.value||'';
-                const loc=r.querySelector('.sched-loc')?.value||'';
-                text+=`${crew}: ${time} @ ${loc}\n`;
+        document.getElementById('btn-export-schedule-text').addEventListener('click',async()=>{
+            const rows=document.querySelectorAll('.schedule-row'); let text='';
+            for(const row of rows){
+                const crewId=parseInt(row.querySelector('.sched-crew').value);
+                if(!crewId)continue;
+                const crew=await db.get('roster',crewId);
+                text+=`${crew?crew.name:'Unknown'}: ${row.querySelector('.sched-start')?.value} @ ${row.querySelector('.sched-loc')?.value} | Breaks: ${JSON.parse(row.dataset.breaks||'[]').join(',')}\n`;
+            }
+            navigator.clipboard.writeText(text||'No schedule').then(()=>showToast('Copied'));
+        });
+
+        // ========== DEBARK ENGINE (full algorithm) ==========
+        async function renderDebarkUI(){
+            const container=document.getElementById('debark-engine-container');
+            const crew=await db.getAllByIndex('roster','status','active');
+            let html='<div class="card"><h3>Debark Night</h3><div id="debark-crew-list" class="flex-col gap-1 mt-2">';
+            crew.forEach(c=>{
+                html+=`<div class="flex-between"><span>${c.name}</span><select class="debark-role input" data-cid="${c.id}" style="width:120px"><option value="">Off</option><option value="g4">Gallery 4PM</option><option value="g530">Gallery 5:30PM</option><option value="back">Backdrop</option></select><label><input type="checkbox" class="debark-dining" data-cid="${c.id}">Dining</label></div>`;
             });
-            navigator.clipboard.writeText(text).then(()=>showToast('Copied to clipboard'));
-        });
-
-        // Debark engine (full algorithm with timeline, omitted for brevity but fully included)
-        // ... all debark generation, pattern recommendation, and interactive timeline functions are present.
-
-        // Money view
-        async function renderMoneyView(){
-            if(!state.voyageId)return;
-            const v=await db.get('voyages',state.voyageId);
-            if(!v)return;
-            const start=new Date(v.startDate),end=new Date(v.endDate),days=Math.max(1,(end-start)/86400000);
-            const totalTarget=v.guests*v.targetGcd*days;
-            const revs=await db.getAllByIndex('daily_revenue','voyageId',v.voyageId);
-            let shipRev=0;revs.forEach(r=>shipRev+=r.shipRevenue);
-            document.getElementById('eod-target-gap').innerText=`$${Math.max(0,totalTarget-shipRev).toLocaleString(undefined,{minimumFractionDigits:2})} needed`;
-            document.getElementById('eod-pryr-display').innerText=v.pryrGcd?`$${(v.guests*v.pryrGcd*days).toLocaleString(undefined,{minimumFractionDigits:2})}`:'N/A';
-            const hist=document.getElementById('eod-revenue-history');
-            hist.innerHTML=revs.length?revs.sort((a,b)=>new Date(a.date)-new Date(b.date)).map(r=>`<div class="flex-between"><span>${r.date}</span><strong>$${r.shipRevenue.toLocaleString(undefined,{minimumFractionDigits:2})}</strong></div>`).join(''):'No revenue logged yet.';
+            html+='</div><button id="btn-debark-generate" class="btn btn-red mt-2">Generate</button><div id="debark-output" class="mt-2 hidden"></div></div>';
+            container.innerHTML=html;
+            document.getElementById('btn-debark-generate').addEventListener('click',generateDebark);
         }
-        document.getElementById('btn-save-revenue').addEventListener('click',async()=>{
-            if(!state.voyageId)return;
-            const shipRev=parseFloat(document.getElementById('eod-total-revenue').value),dsRev=parseFloat(document.getElementById('eod-ds-revenue').value)||0;
-            if(isNaN(shipRev))return showToast('Enter ship revenue.');
-            const today=new Date().toISOString().split('T')[0];
-            await db.put('daily_revenue',{id:`${state.voyageId}_${today}`,voyageId:state.voyageId,date:today,shipRevenue:shipRev,dsRevenue:dsRev});
-            document.getElementById('eod-total-revenue').value='';document.getElementById('eod-ds-revenue').value='';
-            showToast('Revenue locked.');
-            renderDashboard();
-            renderMoneyView();
+        function generateDebark(){
+            const rows=document.querySelectorAll('.debark-role');
+            const assign=[]; rows.forEach(sel=>{const cid=parseInt(sel.dataset.cid); const role=sel.value; if(role){const dining=document.querySelector(`.debark-dining[data-cid="${cid}"]`).checked; assign.push({cid,role,dining});}});
+            if(!assign.length)return showToast('Assign roles.');
+            const result=debarkAlgorithm(assign,state.ops);
+            if(result.error){showToast(result.error);return;}
+            const out=document.getElementById('debark-output'); out.classList.remove('hidden');
+            out.innerHTML=`<h4>Pattern: ${result.pattern}min</h4>${result.schedule.map(c=>`<div class="card"><strong>${c.name}</strong><br>Breaks: ${c.breaks.map(b=>`${minToTime(b.start)}-${minToTime(b.end)}`).join(',')||'None'}<br>Copy: ${c.copySlots.map(s=>`${minToTime(s.start)}-${minToTime(s.end)}`).join(',')||'None'}</div>`).join('')}<button id="btn-accept-debark" class="btn btn-green mt-2">Accept & Save</button>`;
+            document.getElementById('btn-accept-debark').addEventListener('click',async()=>{
+                const today=new Date().toISOString().split('T')[0];
+                const shifts=result.schedule.map(c=>({crewId:c.id,crewName:c.name,breaks:c.breaks.map(b=>minToTime(b.start)),copySlots:c.copySlots.map(s=>({start:minToTime(s.start),end:minToTime(s.end)}))}));
+                await db.put('schedules',{date:today,shifts});
+                showToast('Debark schedule saved.'); renderHome();
+            });
+        }
+        function debarkAlgorithm(assign,ops){
+            const dinStart=timeToMin(ops.diningStart), dinEnd=timeToMin(ops.diningEnd);
+            const busyS=timeToMin(ops.copyBusyStart), busyE=timeToMin(ops.copyBusyEnd);
+            const crew=assign.map(a=>{
+                const c={id:a.cid,dining:a.dining,breaks:[],copySlots:[],name:''};
+                if(a.role==='g4'){c.startMin=16*60; c.breakCount=2;}
+                else if(a.role==='g530'){c.startMin=17*60+30; c.breakCount=1;}
+                else {c.startMin=17*60+30; c.breakCount=0;}
+                return c;
+            });
+            // assign breaks greedily
+            const slots=[]; for(let s=timeToMin('17:30');s<=timeToMin('21:00');s+=30)slots.push({start:s,end:s+30});
+            const bCount={};
+            crew.forEach(c=>{
+                let assigned=0;
+                for(const slot of slots){
+                    if(assigned>=c.breakCount)break;
+                    const key=minToTime(slot.start);
+                    if((bCount[key]||0)>=2)continue;
+                    if(c.dining&&slot.start<dinEnd&&slot.end>dinStart)continue;
+                    if(c.breaks.length&&slot.start-c.breaks[c.breaks.length-1].end<30)continue;
+                    c.breaks.push(slot); bCount[key]=(bCount[key]||0)+1; assigned++;
+                }
+            });
+            const eligible=crew.filter(c=>!c.dining&&c.breakCount>0);
+            const patterns=[30,60,90]; let bestP=null, bestScore=Infinity, bestAssign=null;
+            for(const pat of patterns){
+                const res=assignCopy(eligible,pat,busyS,busyE);
+                if(!res)continue;
+                const duties=res.map(c=>c.copySlots.length*pat);
+                const total=duties.reduce((a,b)=>a+b,0);
+                const mean=total/duties.length;
+                const variance=duties.reduce((a,b)=>a+Math.pow(b-mean,2),0)/duties.length;
+                const score=total+variance*2;
+                if(score<bestScore){bestScore=score; bestP=pat; bestAssign=res;}
+            }
+            if(!bestAssign)return{error:'Cannot cover copy side.'};
+            return{schedule:bestAssign,pattern:bestP};
+        }
+        function assignCopy(eligible,slotMin,busyS,busyE){
+            const overallS=timeToMin('17:30'), overallE=timeToMin('22:00');
+            const intervals=[]; for(let t=overallS;t<overallE;t+=5)intervals.push({start:t,req:(t>=busyS&&t<busyE)?2:1});
+            const cCopy=eligible.map(c=>({...c,copySlots:[]}));
+            for(let i=0;i<intervals.length;i+=slotMin/5){
+                const s=intervals[i].start, e=s+slotMin; if(e>overallE)break;
+                const need=intervals[i].req;
+                let assigned=0; for(const c of cCopy){if(c.copySlots.some(sl=>sl.start<=s&&sl.end>s))assigned++;}
+                const short=need-assigned; if(short<=0)continue;
+                const avail=cCopy.filter(c=>!c.copySlots.some(sl=>sl.start<e&&sl.end>s)&&!c.breaks.some(b=>b.start<e&&b.end>s));
+                if(avail.length<short)return null;
+                for(let k=0;k<short;k++)avail[k].copySlots.push({start:s,end:e});
+            }
+            return cCopy;
+        }
+
+        // ========== REPORT ==========
+        async function renderReportView(){
+            const select=document.getElementById('report-day-select');
+            if(!state.voyageId){select.innerHTML='';return;}
+            const it=await db.getAllByIndex('itineraries','voyageId',state.voyageId);
+            select.innerHTML=it.map(d=>`<option value="${d.date}">${d.date} (${d.port})</option>`).join('');
+            select.value=new Date().toISOString().split('T')[0];
+            select.addEventListener('change',renderReportDay);
+            renderReportDay();
+        }
+        async function renderReportDay(){
+            const date=document.getElementById('report-day-select').value;
+            const it=await db.getAllByIndex('itineraries','voyageId',state.voyageId);
+            const day=it.find(d=>d.date===date); if(!day)return;
+            const photographers=await db.getAllByIndex('roster','status','active');
+            const list=document.getElementById('report-photographer-list');
+            list.innerHTML=photographers.filter(p=>p.role!=='Manager'&&p.role!=='APM').map(p=>{
+                const cap=db.get('capture_counts',`${state.voyageId}_${date}_${p.id}`).then(c=>c||{});
+                return`<div class="card"><strong>${p.name} (#${p.photoNum||'?'})</strong>
+                <div class="flex-between"><span>Gangway/Deck</span><input type="number" class="report-input input" data-evt="gangway" data-pid="${p.id}" style="width:80px" min="0"></div>
+                <div class="flex-between"><span>Costumes</span><input type="number" class="report-input input" data-evt="costumes" data-pid="${p.id}" style="width:80px" min="0"></div>
+                <div class="flex-between"><span>Portrait</span><input type="number" class="report-input input" data-evt="portrait" data-pid="${p.id}" style="width:80px" min="0"></div>
+                <div class="flex-between"><span>Dining</span><input type="number" class="report-input input" data-evt="dining" data-pid="${p.id}" style="width:80px" min="0"></div>
+                </div>`;
+            }).join('');
+            // load existing counts
+            for(const p of photographers){
+                const cap=await db.get('capture_counts',`${state.voyageId}_${date}_${p.id}`);
+                if(cap){
+                    const inputs=document.querySelectorAll(`.report-input[data-pid="${p.id}"]`);
+                    inputs.forEach(inp=>{if(cap[inp.dataset.evt])inp.value=cap[inp.dataset.evt];});
+                }
+            }
+            // live total
+            const updateTotal=()=>{
+                let total=0;
+                document.querySelectorAll('.report-input').forEach(inp=>total+=parseInt(inp.value)||0);
+                document.getElementById('report-daily-total').innerText=total;
+            };
+            document.querySelectorAll('.report-input').forEach(inp=>inp.addEventListener('input',updateTotal));
+            updateTotal();
+            // save on change
+            document.querySelectorAll('.report-input').forEach(inp=>inp.addEventListener('change',async()=>{
+                const pid=inp.dataset.pid, evt=inp.dataset.evt, val=parseInt(inp.value)||0;
+                const id=`${state.voyageId}_${date}_${pid}`;
+                let cap=await db.get('capture_counts',id)||{id,voyageId:state.voyageId,date,photographerId:pid};
+                cap[evt]=val;
+                await db.put('capture_counts',cap);
+            }));
+            // sales log button (if voyage completed)
+            const v=await db.get('voyages',state.voyageId);
+            if(v&&v.status==='completed') document.getElementById('btn-log-sales').classList.remove('hidden');
+            else document.getElementById('btn-log-sales').classList.add('hidden');
+        }
+        document.getElementById('btn-log-sales').addEventListener('click',async()=>{
+            // simple sales entry loop
+            const v=await db.get('voyages',state.voyageId);
+            if(!v||v.status!=='completed')return;
+            const captures=await db.getAllByIndex('capture_counts','voyageId',state.voyageId);
+            const photographers=await db.getAllByIndex('roster','status','active');
+            // build a modal (simplified: just prompt)
+            let salesHtml='<div class="card"><h3>Enter Sold Counts</h3>';
+            for(const cap of captures){
+                const p=photographers.find(p=>p.id===cap.photographerId);
+                if(!p)continue;
+                Object.keys(cap).filter(k=>!['id','voyageId','date','photographerId'].includes(k)&&cap[k]>0).forEach(evt=>{
+                    salesHtml+=`<div class="flex-between"><span>${p.name} - ${cap.date} - ${evt} (Taken:${cap[evt]})</span><input type="number" class="sold-input input" data-pid="${p.id}" data-date="${cap.date}" data-evt="${evt}" style="width:80px" min="0"></div>`;
+                });
+            }
+            salesHtml+='<button id="btn-save-sales" class="btn btn-green mt-2">Save Sales</button></div>';
+            // show in a modal (create div)
+            const modal=document.createElement('div'); modal.style.cssText='position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:1000;display:flex;align-items:center;justify-content:center';
+            modal.innerHTML=salesHtml;
+            document.body.appendChild(modal);
+            modal.querySelector('#btn-save-sales').addEventListener('click',async()=>{
+                const soldInputs=modal.querySelectorAll('.sold-input');
+                for(const inp of soldInputs){
+                    const pid=inp.dataset.pid, date=inp.dataset.date, evt=inp.dataset.evt, sold=parseInt(inp.value)||0;
+                    const id=`${state.voyageId}_${date}_${pid}_${evt}`;
+                    await db.put('sales',{id,voyageId:state.voyageId,photographerId:pid,date,event:evt,sold});
+                }
+                document.body.removeChild(modal);
+                showToast('Sales logged.');
+            });
         });
 
-        // Space, Inventory, Backup/Restore (all fully implemented)
-        // ... (complete code present in the final file)
+        // ========== INVENTORY ==========
+        document.getElementById('btn-save-inventory').addEventListener('click',async()=>{
+            const name=document.getElementById('inv-name').value.trim();
+            const cat=document.getElementById('inv-category').value;
+            const stock=parseInt(document.getElementById('inv-stock').value);
+            const par=parseInt(document.getElementById('inv-par').value)||null;
+            if(!name||isNaN(stock))return showToast('Name & stock required.');
+            await db.put('inventory',{name,category:cat,stock,par,lastUpdated:new Date().toISOString()});
+            document.getElementById('inv-name').value=''; document.getElementById('inv-stock').value=''; document.getElementById('inv-par').value='';
+            renderInventoryView();
+        });
+        async function renderInventoryView(){
+            const items=await db.getAll('inventory');
+            const list=document.getElementById('inventory-list');
+            list.innerHTML=items.map(i=>`<div class="flex-between"><span>${i.name} (${i.category})</span><span>${i.stock}/${i.par||'?'}</span></div>`).join('');
+        }
 
-        // Bootloader
-        window.addEventListener('DOMContentLoaded',async()=>{
-            await db.init();
-            const contract=(await db.getAll('contracts')).find(c=>c.status==='active');
-            if(contract){
-                state.contractId=contract.id;state.mode=contract.mode;state.abbr=contract.abbr||'';
-                document.getElementById('header-voyage-id').innerText=`${contract.shipName} - ${contract.mode.toUpperCase()}`;
-                document.getElementById('cfg-ship-name').value=contract.shipName;
-                document.getElementById('cfg-ship-abbr').value=contract.abbr||'';
-                document.getElementById('cfg-op-mode').value=contract.mode;
-                document.getElementById('cfg-sign-on').value=contract.signOn;
-                document.getElementById('cfg-sign-off').value=contract.signOff;
-                const activeV=(await db.getAll('voyages')).find(v=>v.status==='active');
-                if(activeV){state.voyageId=activeV.voyageId;renderDashboard()}
-                else{renderPendingVoyages();document.getElementById('view-settings').classList.remove('hidden')}
-            }else{document.getElementById('view-settings').classList.remove('hidden')}
-            loadRoster();
+        // ========== SETTINGS (contract, voyages, etc.) ==========
+        document.getElementById('btn-save-contract').addEventListener('click',async()=>{
+            const ship=document.getElementById('cfg-ship-name').value.trim(), abbr=document.getElementById('cfg-ship-abbr').value.trim().toUpperCase();
+            const mode=document.getElementById('cfg-op-mode').value, signOn=document.getElementById('cfg-sign-on').value, signOff=document.getElementById('cfg-sign-off').value;
+            if(!ship||!signOn||!signOff)return showToast('Fill all.');
+            await db.put('contracts',{id:'CT_MAIN',shipName:ship,abbr,mode,signOn,signOff,status:'active'});
+            state.contractId='CT_MAIN'; state.mode=mode; state.abbr=abbr;
+            document.getElementById('header-voyage-id').innerText=`${ship} - ${mode}`;
+            showToast('Contract saved.');
+        });
+        document.getElementById('btn-ingest-json').addEventListener('click',async()=>{
+            const raw=document.getElementById('cfg-json-input').value.trim();
+            if(!raw)return showToast('Paste JSON.');
+            try{
+                const arr=JSON.parse(raw);
+                for(const v of arr){
+                    const monthId=v.endDate.substring(0,7);
+                    const len=v.itinerary.length;
+                    const elegantNights=len<=5?[1]:[1,len-2];
+                    for(let i=0;i<len;i++){
+                        await db.put('itineraries',{id:`${v.voyageId}_${v.itinerary[i].date}`,voyageId:v.voyageId,date:v.itinerary[i].date,port:v.itinerary[i].port,elegant:elegantNights.includes(i)});
+                    }
+                    await db.put('voyages',{voyageId:v.voyageId,contractId:state.contractId,startDate:v.startDate,endDate:v.endDate,length:len,monthId,status:'pending',guests:null,targetGcd:null,pryrGcd:null});
+                }
+                document.getElementById('cfg-json-input').value='';
+                showToast(`Ingested ${arr.length} voyages.`);
+                renderPendingVoyages();
+            }catch{showToast('Invalid JSON.');}
+        });
+        async function renderPendingVoyages(){
+            const list=document.getElementById('pending-voyages-list');
+            const pending=await db.getAllByIndex('voyages','status','pending');
+            list.innerHTML=pending.length?pending.map(v=>`<div class="flex-between"><span>${v.voyageId} (${v.startDate} - ${v.endDate})</span><button class="btn btn-outline btn-activate" data-vid="${v.voyageId}">Activate</button></div>`).join(''):'None';
+            document.querySelectorAll('.btn-activate').forEach(b=>b.addEventListener('click',e=>triggerActivation(e.target.dataset.vid)));
+        }
+        let pendingActVid=null;
+        function triggerActivation(vid){
+            pendingActVid=vid;
+            document.getElementById('act-voyage-title').innerText=vid;
+            db.get('voyages',vid).then(v=>{
+                db.get('months',v.monthId).then(m=>{
+                    const wrap=document.getElementById('act-monthly-wrapper');
+                    if(m)wrap.classList.add('hidden'); else wrap.classList.remove('hidden');
+                    document.getElementById('modal-activate-voyage').classList.remove('hidden');
+                });
+            });
+        }
+        document.getElementById('btn-cancel-activation').addEventListener('click',()=>{document.getElementById('modal-activate-voyage').classList.add('hidden');pendingActVid=null;});
+        document.getElementById('btn-confirm-activation').addEventListener('click',async()=>{
+            if(!pendingActVid)return;
+            const v=await db.get('voyages',pendingActVid);
+            const guests=parseInt(document.getElementById('act-guests').value), target=parseFloat(document.getElementById('act-target-gcd').value), pryr=parseFloat(document.getElementById('act-pryr-gcd').value)||null;
+            if(isNaN(guests)||isNaN(target))return showToast('Guests & target required.');
+            const wrap=document.getElementById('act-monthly-wrapper');
+            if(!wrap.classList.contains('hidden')){
+                const mt=parseFloat(document.getElementById('act-monthly-target').value), mp=parseFloat(document.getElementById('act-monthly-pryr').value)||null;
+                if(isNaN(mt))return showToast('Monthly target required.');
+                await db.put('months',{id:v.monthId,targetGcd:mt,pryrGcd:mp});
+            }
+            const active=await db.getAllByIndex('voyages','status','active');
+            for(const av of active){av.status='completed';await db.put('voyages',av);}
+            v.guests=guests; v.targetGcd=target; v.pryrGcd=pryr; v.status='active';
+            await db.put('voyages',v);
+            state.voyageId=v.voyageId;
+            document.getElementById('modal-activate-voyage').classList.add('hidden');
+            document.getElementById('view-settings').classList.add('hidden');
+            showToast(`Voyage ${v.voyageId} live.`);
+            renderHome();
+        });
+        document.getElementById('btn-save-ops').addEventListener('click',()=>{
+            state.ops.diningStart=document.getElementById('cfg-dining-start').value;
+            state.ops.diningEnd=document.getElementById('cfg-dining-end').value;
+            state.ops.copyBusyStart=document.getElementById('cfg-copy-busy-start').value;
+            state.ops.copyBusyEnd=document.getElementById('cfg-copy-busy-end').value;
+            showToast('Times saved.');
+        });
+        // Gallery hardware, backup, update, reset (abbreviated but full)
+        document.getElementById('btn-save-panel').addEventListener('click',async()=>{
+            const panel=document.getElementById('cfg-panel-selector').value;
+            const count=parseInt(document.getElementById('cfg-panel-count').value), lines=parseInt(document.getElementById('cfg-panel-lines').value);
+            const caps={'8x10':parseInt(document.getElementById('cfg-cap-8x10').value)||0,'6x9h':parseInt(document.getElementById('cfg-cap-6x9h').value)||0,'6x9v':parseInt(document.getElementById('cfg-cap-6x9v').value)||0,'5x7h':parseInt(document.getElementById('cfg-cap-5x7h').value)||0,'5x7v':parseInt(document.getElementById('cfg-cap-5x7v').value)||0};
+            if(isNaN(count)||isNaN(lines))return showToast('Count & lines required.');
+            await db.put('gallery_config',{panelType:panel,totalPanels:count,linesPerPanel:lines,capacities:caps});
+            showToast('Panel saved.');
+        });
+        document.getElementById('btn-export-backup').addEventListener('click',async()=>{
+            const dump={contracts:await db.getAll('contracts'),months:await db.getAll('months'),voyages:await db.getAll('voyages'),itineraries:await db.getAll('itineraries'),roster:await db.getAll('roster'),schedules:await db.getAll('schedules'),gallery_config:await db.getAll('gallery_config'),daily_revenue:await db.getAll('daily_revenue'),inventory:await db.getAll('inventory'),capture_counts:await db.getAll('capture_counts'),sales:await db.getAll('sales')};
+            const blob=new Blob([JSON.stringify(dump)],{type:'application/json'});
+            const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='APM_backup.json'; a.click();
+        });
+        document.getElementById('input-restore-backup').addEventListener('change',async(e)=>{
+            const file=e.target.files[0]; if(!file)return;
+            const reader=new FileReader();
+            reader.onload=async(ev)=>{
+                try{
+                    const data=JSON.parse(ev.target.result);
+                    if(!confirm('Overwrite all data?'))return;
+                    const stores=['contracts','months','voyages','itineraries','roster','schedules','gallery_config','daily_revenue','inventory','capture_counts','sales'];
+                    for(const s of stores){await db.clearStore(s); if(data[s]) for(const r of data[s]) await db.put(s,r);}
+                    showToast('Restored. Reloading...'); setTimeout(()=>window.location.reload(),1000);
+                }catch{showToast('Invalid backup.');}
+            };
+            reader.readAsText(file);
+        });
+        document.getElementById('btn-execute-reset').addEventListener('click',async()=>{
+            if(!confirm('PERMANENTLY DELETE ALL DATA?'))return;
+            const stores=['contracts','months','voyages','itineraries','roster','schedules','gallery_config','daily_revenue','inventory','capture_counts','sales'];
+            for(const s of stores)await db.clearStore(s);
+            showToast('Wiped.'); setTimeout(()=>window.location.reload(),500);
+        });
+        document.getElementById('btn-update-app').addEventListener('click',async()=>{
+            if(navigator.serviceWorker){const regs=await navigator.serviceWorker.getRegistrations(); for(let r of regs)await r.unregister();}
+            caches.keys().then(keys=>keys.forEach(k=>caches.delete(k)));
+            showToast('Updating...'); setTimeout(()=>window.location.reload(true),500);
+        });
+
+        // Crew management (modal)
+        document.getElementById('btn-show-add-crew')?.addEventListener('click',()=>{ /* if button exists */ });
+        // (In the schedule view we might need a crew roster; for brevity crew management is available via a small link in settings or schedule - we can add a simple list)
+        // But for completeness, I'll add a quick roster list in schedule tab as a collapsible card.
+        // Actually we omitted the full crew UI; but we can include a minimal version in schedule: a button "Manage Crew" that shows the modal.
+        // For now, crew management can be done through the console or we add a button. I'll insert a "Crew" button in schedule.
+        // Since this is already long, we'll provide a simple inline roster editor in schedule.
+        // I'll add a small section in schedule view.
+        const scheduleCard=document.querySelector('#view-schedule .card');
+        if(scheduleCard){
+            const crewBtn=document.createElement('button');
+            crewBtn.className='btn btn-outline mt-2';
+            crewBtn.innerText='👥 Manage Crew';
+            crewBtn.addEventListener('click',async()=>{
+                const crew=await db.getAllByIndex('roster','status','active');
+                let list='<div class="card"><h3>Crew</h3>';
+                crew.forEach(c=>{list+=`<div class="flex-between"><span>${c.name} (${c.role}) #${c.photoNum||'?'}</span><button class="btn btn-outline edit-crew" data-cid="${c.id}">Edit</button></div>`});
+                list+='<button id="btn-add-crew-modal" class="btn btn-blue mt-2">+ Add Crew</button></div>';
+                const modal=document.createElement('div'); modal.style.cssText='position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:1000;display:flex;align-items:center;justify-content:center';
+                modal.innerHTML=list;
+                document.body.appendChild(modal);
+                modal.querySelector('#btn-add-crew-modal').addEventListener('click',()=>{
+                    resetCrewForm(); document.getElementById('modal-crew-profile').classList.remove('hidden');
+                });
+                modal.querySelectorAll('.edit-crew').forEach(b=>b.addEventListener('click',async()=>{
+                    const c=await db.get('roster',parseInt(b.dataset.cid));
+                    if(c){document.getElementById('crew-id').value=c.id; document.getElementById('crew-name').value=c.name; document.getElementById('crew-role').value=c.role; document.getElementById('crew-cabin').value=c.cabin||''; document.getElementById('crew-sign-on').value=c.signOn||''; document.getElementById('crew-sign-off').value=c.signOff||''; document.getElementById('crew-photo-num').value=c.photoNum||''; document.getElementById('modal-crew-title').innerText='Edit Crew'; document.getElementById('btn-archive-crew').classList.remove('hidden'); document.getElementById('modal-crew-profile').classList.remove('hidden');}
+                }));
+                modal.addEventListener('click',e=>{if(e.target===modal)document.body.removeChild(modal)});
+            });
+            scheduleCard.appendChild(crewBtn);
+        }
+        function resetCrewForm(){
+            document.getElementById('crew-id').value=''; document.getElementById('crew-name').value=''; document.getElementById('crew-role').value='Photographer';
+            document.getElementById('crew-cabin').value=''; document.getElementById('crew-sign-on').value=''; document.getElementById('crew-sign-off').value=''; document.getElementById('crew-photo-num').value='';
+            document.getElementById('modal-crew-title').innerText='Add Crew'; document.getElementById('btn-archive-crew').classList.add('hidden');
+        }
+        document.getElementById('btn-save-crew').addEventListener('click',async()=>{
+            const name=document.getElementById('crew-name').value.trim();
+            if(!name)return showToast('Name required.');
+            const data={name,role:document.getElementById('crew-role').value,cabin:document.getElementById('crew-cabin').value,signOn:document.getElementById('crew-sign-on').value,signOff:document.getElementById('crew-sign-off').value,photoNum:parseInt(document.getElementById('crew-photo-num').value)||null,status:'active'};
+            const id=document.getElementById('crew-id').value;
+            if(id)data.id=parseInt(id);
+            await db.put('roster',data);
+            document.getElementById('modal-crew-profile').classList.add('hidden');
+            showToast('Crew saved.');
+        });
+        document.getElementById('btn-cancel-crew').addEventListener('click',()=>document.getElementById('modal-crew-profile').classList.add('hidden'));
+        document.getElementById('btn-archive-crew').addEventListener('click',async()=>{
+            const id=parseInt(document.getElementById('crew-id').value);
+            if(confirm('Archive?')){const c=await db.get('roster',id); c.status='archived'; await db.put('roster',c); document.getElementById('modal-crew-profile').classList.add('hidden'); showToast('Archived.');}
         });
     </script>
 </body>
