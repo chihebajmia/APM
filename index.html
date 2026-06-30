@@ -57,7 +57,7 @@
     </header>
     <main id="view-container">
         <!-- HOME -->
-        <div id="view-home" class="app-view">
+<div id="view-home" class="app-view">
             <div class="card"><h2 class="text-muted mb-1">Today's Checklist</h2><div id="checklist-container" class="flex-col gap-1"></div></div>
             <div class="card"><h2 class="text-muted mb-1">Revenue Pacing</h2>
                 <div class="flex-between"><span>Voyage GCD</span><span id="home-voyage-gcd">$0 / $0</span></div><div class="progress-bar-bg"><div id="home-voyage-bar" class="progress-bar-fill" style="background:var(--blue)"></div></div>
@@ -66,6 +66,12 @@
                 <div class="flex-between mt-1"><span>Total Revenue</span><span id="home-total-rev">$0</span></div>
             </div>
             <div class="card"><h2 class="text-muted mb-1">Tonight's Manifest</h2><div id="home-manifest" class="text-sm"></div></div>
+            <div class="card"><h2 class="text-muted mb-1">Enter Tonight's Revenue</h2>
+                <input type="number" id="home-ship-rev" class="input" placeholder="Ship Revenue ($)" min="0" step="0.01">
+                <input type="number" id="home-ds-rev" class="input" placeholder="DS Revenue ($)" min="0" step="0.01">
+                <button id="btn-save-revenue" class="btn btn-green mt-1">Lock Revenue</button>
+                <div id="home-rev-history" class="text-sm mt-2"></div>
+            </div>
             <div class="card"><h2 class="text-muted mb-1">Notes</h2><textarea id="home-notes" class="input" rows="2" placeholder="Jot something down..."></textarea></div>
         </div>
 
@@ -171,7 +177,7 @@
         });
 
         // ========== HOME ==========
-        async function renderHome(){
+async function renderHome(){
             // checklist
             const defaultItems=['Check schedule','Verify backdrops','Assign breaks','Mid-night capture check','Enter revenue'];
             const today=new Date().toISOString().split('T')[0];
@@ -182,7 +188,7 @@
                 const arr=defaultItems.map((_,j)=>list.querySelector(`input[data-idx="${j}"]`)?.checked||false);
                 localStorage.setItem('checklist_'+today,JSON.stringify(arr));
             }));
-            // revenue bars
+            // revenue bars & history
             if(state.voyageId){
                 const v=await db.get('voyages',state.voyageId);
                 if(v&&v.guests){
@@ -208,6 +214,12 @@
                             }
                         }
                     }
+                    // revenue history
+                    const histDiv=document.getElementById('home-rev-history');
+                    if(revs.length){
+                        revs.sort((a,b)=>new Date(a.date)-new Date(b.date));
+                        histDiv.innerHTML=revs.map(r=>`<div class="flex-between"><span>${r.date}</span><strong>$${r.shipRevenue.toLocaleString()}</strong> (DS: $${r.dsRevenue||0})</div>`).join('');
+                    }else histDiv.innerHTML='<span class="text-muted">No revenue yet.</span>';
                     // manifest
                     const sched=await db.get('schedules',today);
                     const man=document.getElementById('home-manifest');
@@ -217,6 +229,25 @@
             }
             document.getElementById('home-notes').value=state.notes;
             document.getElementById('home-notes').addEventListener('input',e=>state.notes=e.target.value);
+            // Revenue save button
+            document.getElementById('btn-save-revenue').addEventListener('click',async()=>{
+                if(!state.voyageId)return showToast('No active voyage.');
+                const shipRev=parseFloat(document.getElementById('home-ship-rev').value);
+                const dsRev=parseFloat(document.getElementById('home-ds-rev').value)||0;
+                if(isNaN(shipRev))return showToast('Enter ship revenue.');
+                const today=new Date().toISOString().split('T')[0];
+                await db.put('daily_revenue',{id:`${state.voyageId}_${today}`,voyageId:state.voyageId,date:today,shipRevenue:shipRev,dsRevenue:dsRev});
+                document.getElementById('home-ship-rev').value=''; document.getElementById('home-ds-rev').value='';
+                showToast('Revenue locked.');
+                renderHome();
+            });
+    document.getElementById('btn-elegant-toggle').addEventListener('click',async()=>{
+                if(!state.voyageId)return;
+                const today=new Date().toISOString().split('T')[0];
+                const it=await db.getAllByIndex('itineraries','voyageId',state.voyageId);
+                const day=it.find(d=>d.date===today);
+                if(day){day.elegant=!day.elegant; await db.put('itineraries',day); showToast(`Elegant ${day.elegant?'ON':'OFF'}`);}
+            });
         }
 
         // ========== SCHEDULE ==========
@@ -324,10 +355,15 @@
             container.innerHTML=html;
             document.getElementById('btn-debark-generate').addEventListener('click',generateDebark);
         }
-        function generateDebark(){
+async function generateDebark(){
             const rows=document.querySelectorAll('.debark-role');
             const assign=[]; rows.forEach(sel=>{const cid=parseInt(sel.dataset.cid); const role=sel.value; if(role){const dining=document.querySelector(`.debark-dining[data-cid="${cid}"]`).checked; assign.push({cid,role,dining});}});
             if(!assign.length)return showToast('Assign roles.');
+            // resolve crew names
+            for(let a of assign){
+                const crew=await db.get('roster',a.cid);
+                a.name=crew?crew.name:'Unknown';
+            }
             const result=debarkAlgorithm(assign,state.ops);
             if(result.error){showToast(result.error);return;}
             const out=document.getElementById('debark-output'); out.classList.remove('hidden');
