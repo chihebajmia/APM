@@ -252,6 +252,23 @@
             font-size: 12px;
             font-weight: bold;
         }
+                /* === 7. SPEED GRID ROLE COLORS === */
+        .role-p500 { background-color: #3498db !important; color: #FFF !important; } /* Blue */
+        .role-p530 { background-color: #2c3e50 !important; color: #FFF !important; } /* Dark Navy */
+        .role-dr   { background-color: #e74c3c !important; color: #FFF !important; } /* Red */
+        .role-g400 { background-color: #f1c40f !important; color: #000 !important; } /* Yellow */
+        .role-g530 { background-color: #e67e22 !important; color: #FFF !important; } /* Orange */
+        .role-al   { background-color: #9b59b6 !important; color: #FFF !important; } /* Purple */
+        .role-ps   { background-color: #1abc9c !important; color: #FFF !important; } /* Teal */
+        
+        .role-label { 
+            display: block; 
+            font-size: 11px; 
+            font-weight: 500; 
+            margin-top: 4px;
+            opacity: 0.9;
+        }
+
     </style>
 </head>
 <body>
@@ -289,14 +306,22 @@
             No active contract. App is in Read-Only archive mode.
         </div>
 
+        <!-- Replace the old Elegant Night Checkbox on the Dashboard with this: -->
         <div class="card">
-            <div class="card-title">Daily Operations</div>
-            <div class="flex-between" style="margin-bottom: 12px;">
-                <span>Is today Elegant Night?</span>
-                <input type="checkbox" id="toggle-elegant" style="transform: scale(1.5);">
+            <div class="card-title">Voyage Timeline</div>
+            <div class="input-row" style="border: none;">
+                <label>Current Cruise Day:</label>
+                <select id="select-cruise-day" style="width: auto; margin-bottom: 0;">
+                    <option value="embark">1 - Embarkation</option>
+                    <option value="port">Port Day</option>
+                    <option value="sea">Sea Day</option>
+                    <option value="elegant">Elegant Night</option>
+                    <option value="debark">Final Night (Debark Prep)</option>
+                </select>
             </div>
-            <button class="btn btn-secondary" id="btn-morning-checklist">🌅 Morning Checklist</button>
+            <button class="btn btn-secondary" id="btn-morning-checklist" style="margin-top: 10px;">🌅 Morning Checklist</button>
         </div>
+
 
         <div class="card">
             <div class="card-title">Manager Scratchpad</div>
@@ -315,7 +340,6 @@
                 <option value="dining_room">Dining Room</option>
                 <option value="gallery_400">Gallery 4:00 PM</option>
                 <option value="gallery_530">Gallery 5:30 PM</option>
-                <option value="copy_side">Debark Copy Side</option>
                 <option value="assistant_lab">Assistant Lab Tech</option>
                 <option value="print_shop">Print Shop Specialist</option>
             </select>
@@ -1044,12 +1068,19 @@
 
 
     /* === 11. UI CONTROLLER: DAILY SETUP (SPEED GRID) === */
-    let dailyAssignments = []; // Holds the active shift roster
+    let dailyAssignments = [];
 
-    /**
-     * Renders the thumb-friendly number pad.
-     * Defaults to 20 slots unless AppState overrides it.
-     */
+    // Dictionary linking roles to their CSS classes and short-labels
+    const RoleStyles = {
+        'portrait_500': { class: 'role-p500', short: 'P 5:00' },
+        'portrait_530': { class: 'role-p530', short: 'P 5:30' },
+        'dining_room':  { class: 'role-dr',   short: 'DR' },
+        'gallery_400':  { class: 'role-g400', short: 'G 4:00' },
+        'gallery_530':  { class: 'role-g530', short: 'G 5:30' },
+        'assistant_lab':{ class: 'role-al',   short: 'Lab' },
+        'print_shop':   { class: 'role-ps',   short: 'Print' }
+    };
+
     function renderSpeedGrid(rosterSize = 20) {
         const grid = document.getElementById('setup-number-pad');
         grid.innerHTML = '';
@@ -1057,7 +1088,7 @@
         for (let i = 1; i <= rosterSize; i++) {
             let btn = document.createElement('button');
             btn.className = 'pad-btn';
-            btn.textContent = i;
+            btn.innerHTML = `<div>${i}</div>`;
             btn.dataset.id = i;
             
             btn.addEventListener('click', () => {
@@ -1065,16 +1096,16 @@
                 const role = roleSelect.value;
                 if (!role) return alert('Select a duty from the dropdown first!');
                 
-                // Check if this number is already assigned
                 const existingIndex = dailyAssignments.findIndex(a => a.scheduleNumber === i);
                 
                 if (existingIndex > -1) {
-                    // Toggle Off (Undo)
+                    // Undo logic: Remove assignment and wipe styles
+                    const oldRole = dailyAssignments[existingIndex].role;
+                    btn.classList.remove(RoleStyles[oldRole].class);
+                    btn.innerHTML = `<div>${i}</div>`; // Remove label
                     dailyAssignments.splice(existingIndex, 1);
-                    btn.classList.remove('selected');
                 } else {
-                    // Toggle On (Assign)
-                    // Retrieve real name from DB state if available, else placeholder
+                    // Assign logic: Apply color and short label
                     const crewMember = AppState.roster.find(c => c.scheduleNumber === i) || { name: `Photographer #${i}` };
                     
                     dailyAssignments.push({
@@ -1082,50 +1113,51 @@
                         role: role,
                         name: crewMember.name
                     });
-                    btn.classList.add('selected');
+                    
+                    btn.classList.add(RoleStyles[role].class);
+                    btn.innerHTML = `<div>${i}</div><span class="role-label">${RoleStyles[role].short}</span>`;
                 }
             });
             grid.appendChild(btn);
         }
     }
 
-    // Initialize an empty grid on boot
     renderSpeedGrid(20);
 
     // ACTION: Lock Schedule & Generate Matrix
     document.getElementById('btn-lock-schedule').addEventListener('click', () => {
         if (dailyAssignments.length === 0) return alert('No team members assigned! Tap the numbers to build the roster.');
         
-        // 1. Lock the UI inputs
         document.getElementById('setup-number-pad').style.pointerEvents = 'none';
         document.getElementById('select-evening-role').disabled = true;
         document.getElementById('btn-lock-schedule').style.display = 'none';
         document.getElementById('btn-edit-schedule').style.display = 'block';
         
-        // 2. Fetch data and run Math Engine (Chunk 5)
-        const isElegant = document.getElementById('toggle-elegant').checked;
+        // CHECK THE CRUISE DAY PILLAR
+        const currentDay = document.getElementById('select-cruise-day').value;
+        const isElegant = (currentDay === 'elegant');
+        const isDebarkNight = (currentDay === 'debark');
+        
+        // 1. Run the Break Engine
         const timeline = calculateBreakCascade(dailyAssignments, isElegant);
         
-        // 3. Render the Break Matrix to the screen
         const outputDiv = document.getElementById('break-cascade-list');
-        outputDiv.innerHTML = '';
+        outputDiv.innerHTML = `<div style="font-size:12px; margin-bottom:10px; color:var(--text-muted);">Mode: ${currentDay.toUpperCase()}</div>`;
         
         timeline.forEach(item => {
             const div = document.createElement('div');
             div.className = 'card';
             div.style.marginBottom = '8px';
             div.style.padding = '12px';
-            // Highlight warnings in red
             const isWarning = item.type.includes('WARNING') ? 'color: var(--danger); font-weight: bold;' : '';
             div.innerHTML = `<strong style="${isWarning}">${item.time}</strong> - ${item.crew} <br>
                              <span style="font-size:12px; color:var(--text-muted)">${item.type}: ${item.notes}</span>`;
             outputDiv.appendChild(div);
         });
 
-        // 4. Run Copy Side Math if applicable (Chunk 6)
-        const hasCopySide = dailyAssignments.some(a => a.role === 'copy_side');
-        if (hasCopySide) {
-             const copyMatrix = calculateCopySideTetris(dailyAssignments);
+        // 2. AUTOPILOT: Only run Copy Side Tetris if it's Debark Night
+        if (isDebarkNight) {
+             const copyMatrix = calculateCopySideTetris(dailyAssignments); // Feeds it the Gallery guys
              
              if (!copyMatrix.error) {
                  const header = document.createElement('div');
@@ -1143,21 +1175,19 @@
                      outputDiv.appendChild(div);
                  });
              } else {
-                 outputDiv.innerHTML += `<div style="color:var(--danger); margin-top:10px;">${copyMatrix.error}</div>`;
+                 // Show a warning if it is Debark Night but no Gallery guys are assigned
+                 outputDiv.innerHTML += `<div style="color:var(--danger); margin-top:10px; font-weight:bold;">⚠️ Cannot generate Copy Side schedule: No Gallery staff assigned tonight.</div>`;
              }
         }
         
-        // Show output card
         document.getElementById('schedule-output').style.display = 'block';
         
-        // 5. Send assigned portrait shooters to the Floor Rounds and EOD screens
         populateFloorRounds(dailyAssignments);
         if (typeof populateEODInputs === 'function') populateEODInputs(dailyAssignments);
     });
 
     // ACTION: Undo / Edit Schedule
     document.getElementById('btn-edit-schedule').addEventListener('click', () => {
-        // Unlock the UI
         document.getElementById('setup-number-pad').style.pointerEvents = 'auto';
         document.getElementById('select-evening-role').disabled = false;
         document.getElementById('btn-lock-schedule').style.display = 'block';
@@ -1165,7 +1195,7 @@
         document.getElementById('schedule-output').style.display = 'none';
     });
 
-
+    
     /* === 12. UI CONTROLLER: FLOOR ROUNDS (MID-SHIFT PACING) === */
     /**
      * Dynamically builds the Floor Rounds screen based on the evening roster.
