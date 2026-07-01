@@ -451,7 +451,34 @@
             </div>
         </div>
     </section>
+<!-- === SUB-SCREEN: VOYAGE WIZARD === -->
+    <section id="screen-voyage-wizard" class="screen" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-color); z-index: 2000; overflow-y: auto;">
+        <div style="padding: 16px; padding-top: env(safe-area-inset-top);">
+            <button class="btn btn-secondary" onclick="document.getElementById('screen-voyage-wizard').style.display='none';">⬅ Cancel</button>
+            <div class="card" style="margin-top: 16px;">
+                <div class="card-title">Start New Voyage</div>
+                <div class="input-row"><label>Cruise ID:</label><input type="text" id="input-voyage-id" placeholder="e.g. SUNRISE-AUG03"></div>
+                <div class="input-row"><label>Guest Count:</label><input type="number" id="input-voyage-guests" inputmode="numeric" placeholder="3000"></div>
+                <div class="input-row"><label>Target GCD:</label><input type="number" id="input-voyage-gcd" inputmode="decimal" placeholder="4.50" value="4.50"></div>
+                <button class="btn" id="btn-save-voyage" style="margin-top:10px;">Save & Start Voyage</button>
+            </div>
+        </div>
+    </section>
 
+    <!-- === SUB-SCREEN: CREW ROSTER === -->
+    <section id="screen-crew-roster" class="screen" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-color); z-index: 2000; overflow-y: auto;">
+        <div style="padding: 16px; padding-top: env(safe-area-inset-top);">
+            <button class="btn btn-secondary" onclick="document.getElementById('screen-crew-roster').style.display='none';">⬅ Back</button>
+            <div class="card" style="margin-top: 16px;">
+                <div class="card-title">Manage Crew Roster</div>
+                <p style="font-size: 13px;">Assign names to schedule numbers.</p>
+                <div id="roster-editor-list">
+                    <!-- JS will generate 20 input slots here -->
+                </div>
+                <button class="btn" id="btn-save-roster" style="margin-top:15px;">Save Roster</button>
+            </div>
+        </div>
+    </section>
 <!-- === END OF CHUNK 2: HTML SKELETON. APPEND CHUNK 3 BELOW === -->
 <script>
 /* === 1. GLOBAL STATE & CONFIG === */
@@ -1378,7 +1405,78 @@
             <div style="padding:8px 0;">✅ 2 boxes of folio covers requested from provision</div>
         `;
     }
+/* === 14.5 UI CONTROLLER: VOYAGE & ROSTER SETTINGS === */
+    
+    // --- VOYAGE WIZARD ---
+    document.getElementById('btn-voyage-wizard').addEventListener('click', () => {
+        document.getElementById('screen-voyage-wizard').style.display = 'block';
+    });
 
+    document.getElementById('btn-save-voyage').addEventListener('click', async () => {
+        const vId = document.getElementById('input-voyage-id').value.trim();
+        const vGuests = parseInt(document.getElementById('input-voyage-guests').value) || 3000;
+        const vGcd = parseFloat(document.getElementById('input-voyage-gcd').value) || 4.50;
+
+        if (!vId) return alert("Please enter a Cruise ID (e.g., SUNRISE-AUG03)");
+
+        const newVoyage = {
+            id: vId,
+            guestCount: vGuests,
+            voyageGcdTarget: vGcd,
+            status: 'Active',
+            contractId: AppState.activeContract ? AppState.activeContract.id : 'DEFAULT-CONTRACT'
+        };
+
+        // Save to active state and database
+        AppState.currentVoyage = newVoyage;
+        await dbPut('voyages', newVoyage);
+        
+        updateLiveRevenue(); // Instantly updates the dashboard banner math
+        document.getElementById('screen-voyage-wizard').style.display = 'none';
+        alert("New voyage started successfully! Dashboard targets updated.");
+    });
+
+    // --- MANAGE CREW ROSTER ---
+    document.getElementById('btn-crew-roster').addEventListener('click', () => {
+        const container = document.getElementById('roster-editor-list');
+        container.innerHTML = '';
+        
+        // Generate 20 input slots and pre-fill with current names if they exist
+        for (let i = 1; i <= 20; i++) {
+            const existing = AppState.roster.find(r => r.scheduleNumber === i);
+            const nameVal = existing ? existing.name : '';
+            
+            container.innerHTML += `
+                <div class="input-row">
+                    <label style="flex: 0.3; min-width: 40px;">#${i}</label>
+                    <input type="text" id="roster-slot-${i}" value="${nameVal}" placeholder="Empty Slot" style="flex: 1; margin-bottom: 0; padding: 10px;">
+                </div>
+            `;
+        }
+        document.getElementById('screen-crew-roster').style.display = 'block';
+    });
+
+    document.getElementById('btn-save-roster').addEventListener('click', async () => {
+        let newRoster = [];
+        for (let i = 1; i <= 20; i++) {
+            const nameInput = document.getElementById(`roster-slot-${i}`).value.trim();
+            if (nameInput !== "") {
+                const crewMember = {
+                    id: `crew_${i}_${Date.now()}`, // Generates a unique ID
+                    scheduleNumber: i,
+                    name: nameInput,
+                    contractId: AppState.activeContract ? AppState.activeContract.id : 'DEFAULT-CONTRACT'
+                };
+                newRoster.push(crewMember);
+                await dbPut('crew', crewMember); // Push to IndexedDB
+            }
+        }
+        
+        // Update the app's live memory
+        AppState.roster = newRoster;
+        document.getElementById('screen-crew-roster').style.display = 'none';
+        alert("Roster saved successfully! The Speed Grid has been updated.");
+    });
 
     /* === 15. SYSTEM BOOT SEQUENCE === */
     document.addEventListener('DOMContentLoaded', async () => {
