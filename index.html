@@ -2,705 +2,1420 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+    <!-- Essential PWA and iOS Safe Area constraints -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="APM Engine">
-    <link rel="manifest" href="./manifest.json">
-    <title>APM Engine</title>
+    <meta name="apple-mobile-web-app-title" content="ShipPhoto OS">
+    <title>ShipPhoto OS</title>
+
+    <!-- Manifest link (to be created later for full PWA installability) -->
+    <link rel="manifest" href="manifest.json">
+
     <style>
-        :root{--bg:#f8f9fa;--card-bg:#fff;--text:#1a1a1a;--muted:#6c757d;--blue:#0A84FF;--green:#32D74B;--red:#FF453A;--yellow:#FFD60A;--purple:#AF52DE;--border:1px solid #dee2e6;--radius:12px;--pad:16px;--font-sm:0.85rem;--font-md:1rem;--font-lg:1.2rem}
-        *{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;-webkit-tap-highlight-color:transparent}
-        body{background:var(--bg);color:var(--text);padding-bottom:80px;font-size:var(--font-md);line-height:1.4}
-        .toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:12px 24px;border-radius:24px;font-size:var(--font-sm);box-shadow:0 4px 12px rgba(0,0,0,.2);z-index:2000;opacity:0;transition:opacity .3s;pointer-events:none}
-        .toast.show{opacity:1}
-        .card{background:var(--card-bg);padding:var(--pad);border-radius:var(--radius);border:var(--border);margin-bottom:12px}
-        .input{width:100%;padding:12px;background:#fff;border:1px solid #ccc;border-radius:8px;margin-bottom:12px;font-size:var(--font-md)}
-        .input:focus{outline:1px solid var(--blue);border-color:var(--blue)}
-        .label{display:block;font-size:var(--font-sm);color:var(--muted);margin-bottom:4px}
-        .btn{width:100%;padding:14px;border:none;border-radius:8px;font-weight:700;font-size:var(--font-md);cursor:pointer;transition:opacity .2s;background:#e9ecef;color:var(--text)}
-        .btn:active{opacity:.7}
-        .btn-blue{background:var(--blue);color:#fff}
-        .btn-green{background:var(--green);color:#fff}
-        .btn-red{background:var(--red);color:#fff}
-        .btn-outline{background:transparent;border:1px solid var(--muted);color:var(--text)}
-        .hidden{display:none!important}
-        .flex-between{display:flex;justify-content:space-between;align-items:center}
-        .flex-col{display:flex;flex-direction:column}
-        .gap-1{gap:8px}
-        .mt-1{margin-top:8px}
-        .mt-2{margin-top:16px}
-        .mb-1{margin-bottom:8px}
-        .text-sm{font-size:var(--font-sm)}
-        .text-muted{color:var(--muted)}
-        .text-bold{font-weight:700}
-        .progress-bar-bg{width:100%;height:8px;background:#e9ecef;border-radius:4px;overflow:hidden;margin-top:6px}
-        .progress-bar-fill{height:100%;width:0%;transition:width .3s}
-        .badge{padding:4px 8px;border-radius:12px;font-size:.7rem;font-weight:700;display:inline-block}
-        .badge-green{background:var(--green);color:#fff}
-        .badge-red{background:var(--red);color:#fff}
-        .badge-yellow{background:var(--yellow);color:#000}
-        .badge-purple{background:var(--purple);color:#fff}
-        #app-header{background:var(--card-bg);padding:12px var(--pad);border-bottom:var(--border);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:100}
-        #view-container{padding:var(--pad);max-width:600px;margin:0 auto}
-        #bottom-nav{position:fixed;bottom:0;width:100%;background:var(--card-bg);border-top:var(--border);display:grid;grid-template-columns:repeat(5,1fr);padding:8px 0 calc(8px + env(safe-area-inset-bottom));z-index:100}
-        .nav-btn{background:0 0;border:none;color:var(--muted);font-size:.65rem;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer}
-        .nav-btn.active{color:var(--blue)}
-        .badge-dot{width:8px;height:8px;border-radius:50%;background:var(--red);position:absolute;top:-2px;right:-2px}
+        /* === 1. CSS VARIABLES (THEME & COLORS) === */
+        :root {
+            --primary: #005A9C; /* Carnival Blue */
+            --accent: #E31837; /* Carnival Red */
+            --bg-color: #F4F7F6;
+            --card-bg: #FFFFFF;
+            --text-main: #333333;
+            --text-muted: #777777;
+            --border: #E0E0E0;
+            --success: #2ECC71; /* Pacing well */
+            --warning: #F1C40F; /* Nearing target */
+            --danger: #E74C3C; /* Pacing behind / Dead station */
+        }
+
+        /* === 2. BASE RESETS & iOS OPTIMIZATIONS === */
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html {
+            /* iOS Keyboard fix: allows the page to scroll past the bottom so inputs aren't blocked */
+            scroll-padding-bottom: 50vh; 
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            /* Prevents the iOS pull-to-refresh bounce */
+            overscroll-behavior-y: none; 
+            /* iPhone 15 Pro Safe Areas */
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: calc(env(safe-area-inset-bottom) + 70px); 
+        }
+
+        /* === 3. LAYOUT & NAVIGATION === */
+        .screen {
+            display: none; /* Hidden by default */
+            padding: 16px;
+            animation: fadeIn 0.2s ease-in-out;
+        }
+        .screen.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: calc(65px + env(safe-area-inset-bottom));
+            background-color: var(--card-bg);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding-bottom: env(safe-area-inset-bottom);
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+            z-index: 1000;
+        }
+
+        .nav-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 25%;
+            color: var(--text-muted);
+            font-size: 11px;
+            font-weight: 600;
+            text-decoration: none;
+            background: none;
+            border: none;
+            padding: 10px 0;
+        }
+        
+        .nav-btn.active {
+            color: var(--primary);
+        }
+
+        .nav-icon {
+            font-size: 24px;
+            margin-bottom: 4px;
+        }
+
+        /* === 4. UI COMPONENTS (CARDS, BUTTONS, INPUTS) === */
+        .card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+
+        .card-title {
+            margin: 0 0 12px 0;
+            font-size: 16px;
+            font-weight: 700;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .btn {
+            background-color: var(--primary);
+            color: #FFF;
+            border: none;
+            border-radius: 8px;
+            padding: 14px;
+            font-size: 16px;
+            font-weight: 700;
+            width: 100%;
+            cursor: pointer;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .btn:active { opacity: 0.8; }
+        
+        .btn-secondary {
+            background-color: transparent;
+            color: var(--primary);
+            border: 2px solid var(--primary);
+        }
+
+        .btn-danger {
+            background-color: transparent;
+            color: var(--danger);
+            border: 2px solid var(--danger);
+        }
+
+        input[type="number"], input[type="text"], textarea, select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 16px; /* 16px prevents iOS from auto-zooming on focus */
+            background-color: #FAFAFA;
+            margin-bottom: 12px;
+        }
+
+        /* === 5. SPECIALIZED GRIDS (SPEED GRID & INPUTS) === */
+        .speed-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .pad-btn {
+            background-color: #EEEEEE;
+            border: none;
+            border-radius: 8px;
+            padding: 16px 0;
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .pad-btn.selected {
+            background-color: var(--primary);
+            color: #FFF;
+        }
+
+        .input-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+            padding: 12px 0;
+        }
+
+        .input-row:last-child {
+            border-bottom: none;
+        }
+
+        .input-row label {
+            flex: 1;
+            font-weight: 600;
+            font-size: 15px;
+        }
+
+        .input-row input {
+            width: 80px;
+            margin-bottom: 0;
+            text-align: center;
+        }
+
+        /* === 6. DASHBOARD & PACING BANNERS === */
+        .live-banner {
+            position: sticky;
+            top: env(safe-area-inset-top);
+            background: var(--card-bg);
+            padding: 16px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            z-index: 100;
+            margin-bottom: 20px;
+        }
+
+        .metric-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-weight: 700;
+        }
+
+        .status-indicator {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            color: #FFF;
+            background-color: var(--text-muted);
+        }
+
+        .status-green { background-color: var(--success); }
+        .status-yellow { background-color: var(--warning); color: #000; }
+        .status-red { background-color: var(--danger); }
+
+        .flex-between {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .badge {
+            background: var(--border);
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
-    <div id="toast" class="toast"></div>
-    <header id="app-header">
-        <div><h1 style="font-size:var(--font-lg)">APM Engine</h1><span id="header-voyage-id" class="text-sm text-muted">Awaiting Configuration</span></div>
-        <button id="btn-open-settings" style="background:0 0;border:none;font-size:1.5rem;cursor:pointer">⚙️</button>
-    </header>
-    <main id="view-container">
-        <!-- HOME -->
-<div id="view-home" class="app-view">
-            <div class="card"><h2 class="text-muted mb-1">Today's Checklist</h2><div id="checklist-container" class="flex-col gap-1"></div></div>
-            <div class="card"><h2 class="text-muted mb-1">Revenue Pacing</h2>
-                <div class="flex-between"><span>Voyage GCD</span><span id="home-voyage-gcd">$0 / $0</span></div><div class="progress-bar-bg"><div id="home-voyage-bar" class="progress-bar-fill" style="background:var(--blue)"></div></div>
-                <div class="flex-between mt-1"><span>Monthly GCD</span><span id="home-month-gcd">$0 / $0</span></div><div class="progress-bar-bg"><div id="home-month-bar" class="progress-bar-fill" style="background:var(--green)"></div></div>
-                <div class="flex-between mt-1"><span>PRYR GCD</span><span id="home-pryr-gcd">$0 / $0</span></div><div class="progress-bar-bg"><div id="home-pryr-bar" class="progress-bar-fill" style="background:var(--purple)"></div></div>
-                <div class="flex-between mt-1"><span>Total Revenue</span><span id="home-total-rev">$0</span></div>
-            </div>
-            <div class="card"><h2 class="text-muted mb-1">Tonight's Manifest</h2><div id="home-manifest" class="text-sm"></div></div>
-            <div class="card"><h2 class="text-muted mb-1">Enter Tonight's Revenue</h2>
-                <input type="number" id="home-ship-rev" class="input" placeholder="Ship Revenue ($)" min="0" step="0.01">
-                <input type="number" id="home-ds-rev" class="input" placeholder="DS Revenue ($)" min="0" step="0.01">
-                <button id="btn-save-revenue" class="btn btn-green mt-1">Lock Revenue</button>
-                <div id="home-rev-history" class="text-sm mt-2"></div>
-            </div>
-            <div class="card"><h2 class="text-muted mb-1">Notes</h2><textarea id="home-notes" class="input" rows="2" placeholder="Jot something down..."></textarea></div>
-        </div>
-
-        <!-- SCHEDULE -->
-        <div id="view-schedule" class="app-view hidden">
-            <div class="card"><div class="flex-between mb-2"><h2>Daily Schedule</h2><select id="day-type-override" class="input" style="width:auto;padding:6px;margin-bottom:0;font-size:0.8rem"><option value="auto">Auto</option><option value="casual">Casual</option><option value="elegant">Elegant</option><option value="debark">Debark</option></select></div>
-                <div id="debark-engine-container" class="hidden"></div>
-                <div id="normal-schedule-container"><div id="schedule-grid" class="flex-col gap-1"></div><div class="flex-between mt-2"><button id="btn-add-shift" class="btn" style="width:48%;background:var(--green);color:#fff">+ Shift</button><button id="btn-auto-breaks" class="btn btn-outline" style="width:48%;border-color:var(--blue);color:var(--blue)">⚡ Auto-Breaks</button></div></div>
-                <div id="schedule-warn" class="hidden mt-2 p-2" style="background:#fff3cd;border:1px solid #ffc107;border-radius:8px;font-size:0.8rem;color:#856404"></div>
-                <button id="btn-save-schedule" class="btn mt-2" style="background:var(--green);color:#fff">Lock Schedule</button>
-                <button id="btn-export-schedule-text" class="btn btn-outline mt-1">📋 Copy Schedule Text</button>
-            </div>
-        </div>
-
-        <!-- REPORT -->
-        <div id="view-report" class="app-view hidden">
-            <div class="card"><h2>Productivity Report</h2><select id="report-day-select" class="input"></select>
-                <div id="report-photographer-list" class="flex-col gap-1"></div>
-                <div class="flex-between mt-2"><span>Daily Total</span><strong id="report-daily-total">0</strong></div>
-                <button id="btn-log-sales" class="btn btn-outline mt-2 hidden">Log Sales (Completed Voyage)</button>
-            </div>
-        </div>
-
-        <!-- INVENTORY -->
-        <div id="view-inventory" class="app-view hidden">
-            <div class="card"><h2>Inventory</h2><select id="inv-category" class="input"><option value="FreeGifts">Free Gifts</option><option value="VIFP">VIFP</option><option value="Consumables">Consumables</option><option value="Retails">Retails</option></select>
-                <input type="text" id="inv-name" class="input" placeholder="Item name"><div class="flex-between"><input type="number" id="inv-stock" class="input" placeholder="Stock" min="0" style="width:48%"><input type="number" id="inv-par" class="input" placeholder="Par" min="0" style="width:48%"></div>
-                <button id="btn-save-inventory" class="btn btn-blue">Add / Update</button>
-            </div>
-            <div class="card"><h3 class="text-muted mb-2">Stock Status</h3><div id="inventory-list" class="flex-col gap-1"></div></div>
-        </div>
-
-        <!-- SETTINGS -->
-        <div id="view-settings" class="app-view hidden">
-            <div class="card"><h2>Settings</h2>
-                <div class="card"><h3 style="color:var(--blue)">Contract</h3><input type="text" id="cfg-ship-name" class="input" placeholder="Ship name"><input type="text" id="cfg-ship-abbr" class="input" placeholder="Abbreviation (e.g. SN)" maxlength="3" style="text-transform:uppercase"><select id="cfg-op-mode" class="input"><option value="print">Print</option><option value="hybrid">Hybrid</option><option value="digital">Digital</option></select><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><input type="date" id="cfg-sign-on" class="input"><input type="date" id="cfg-sign-off" class="input"></div><button id="btn-save-contract" class="btn btn-blue">Save Contract</button></div>
-                <div class="card"><h3 style="color:var(--green)">Voyages</h3><textarea id="cfg-json-input" class="input" rows="4" placeholder="Paste JSON..." style="font-family:monospace;font-size:0.8rem"></textarea><button id="btn-ingest-json" class="btn btn-green">Parse JSON</button><h4 class="text-sm text-muted mt-2">Pending Voyages</h4><div id="pending-voyages-list" class="flex-col gap-1"></div></div>
-                <div class="card"><h3>Operational Times</h3><label class="label">Dining Relief</label><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><input type="time" id="cfg-dining-start" class="input" value="17:45"><input type="time" id="cfg-dining-end" class="input" value="20:00"></div><label class="label mt-1">Copy Side Busy</label><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><input type="time" id="cfg-copy-busy-start" class="input" value="18:00"><input type="time" id="cfg-copy-busy-end" class="input" value="21:00"></div><button id="btn-save-ops" class="btn btn-outline mt-1">Save Times</button></div>
-                <div class="card"><h3 style="color:var(--yellow)">Gallery Hardware</h3><select id="cfg-panel-selector" class="input"><option value="A">A</option><option value="B">B</option><option value="C">C</option></select><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><input type="number" id="cfg-panel-count" class="input" placeholder="Panels" min="1"><input type="number" id="cfg-panel-lines" class="input" placeholder="Lines/panel" min="1"></div><label class="label">Capacities</label><div style="display:grid;grid-template-columns:repeat(5,1fr);gap:4px"><div><input type="number" id="cfg-cap-8x10" class="input" placeholder="8x10" style="padding:6px;font-size:0.8rem"></div><div><input type="number" id="cfg-cap-6x9h" class="input" placeholder="6x9H" style="padding:6px;font-size:0.8rem"></div><div><input type="number" id="cfg-cap-6x9v" class="input" placeholder="6x9V" style="padding:6px;font-size:0.8rem"></div><div><input type="number" id="cfg-cap-5x7h" class="input" placeholder="5x7H" style="padding:6px;font-size:0.8rem"></div><div><input type="number" id="cfg-cap-5x7v" class="input" placeholder="5x7V" style="padding:6px;font-size:0.8rem"></div></div><button id="btn-save-panel" class="btn" style="background:var(--yellow);color:#000">Save Panel</button></div>
-                <div class="card"><h3>Data & Update</h3><button id="btn-export-backup" class="btn btn-outline">📥 Export Backup</button><label for="input-restore-backup" class="btn btn-outline" style="cursor:pointer;margin-top:8px;display:block">📤 Restore Backup</label><input type="file" id="input-restore-backup" accept=".json" class="hidden"><button id="btn-execute-reset" class="btn mt-1" style="background:#fff0f0;color:var(--red);border:1px solid var(--red)">⚠️ Hard Reset</button><button id="btn-update-app" class="btn btn-blue mt-1">🔄 Update App</button></div>
-            </div>
-        </div>
-
-        <!-- CREW PROFILE MODAL (hidden) -->
-        <div id="modal-crew-profile" class="hidden" style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:1000;display:flex;align-items:center;justify-content:center"><div class="card" style="width:90%;max-width:400px"><h3 id="modal-crew-title">Add Crew</h3><input type="hidden" id="crew-id"><input type="text" id="crew-name" class="input" placeholder="Name"><select id="crew-role" class="input"><option value="Photographer">Photographer</option><option value="Trainee">Trainee</option><option value="Senior">Senior</option><option value="APM">APM</option><option value="Manager">Manager</option><option value="PrintShop">Print Shop</option><option value="LabTechDuty">Lab Tech (IC)</option><option value="LabTechAssist">Asst Lab Tech</option><option value="DreamsStudio">Dreams Studio</option></select><input type="text" id="crew-cabin" class="input" placeholder="Cabin"><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><input type="date" id="crew-sign-on" class="input"><input type="date" id="crew-sign-off" class="input"></div><input type="number" id="crew-photo-num" class="input" placeholder="Photographer Number" min="1"><div class="flex-between mt-2"><button id="btn-save-crew" class="btn btn-blue" style="width:48%">Save</button><button id="btn-cancel-crew" class="btn btn-outline" style="width:48%">Cancel</button></div><button id="btn-archive-crew" class="btn btn-outline mt-1 hidden" style="color:var(--red);border-color:var(--red)">Archive</button></div></div>
-        <!-- ACTIVATE VOYAGE MODAL -->
-        <div id="modal-activate-voyage" class="hidden" style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:1000;display:flex;align-items:center;justify-content:center"><div class="card" style="width:90%;max-width:400px"><h2>Activate <span id="act-voyage-title"></span></h2><div id="act-monthly-wrapper" class="hidden mt-2 p-2" style="background:#f0f0f0;border-radius:8px"><label class="label">Monthly Target GCD</label><input type="number" id="act-monthly-target" class="input" min="0"><label class="label">Monthly PRYR GCD (opt)</label><input type="number" id="act-monthly-pryr" class="input" min="0"></div><input type="number" id="act-guests" class="input mt-1" placeholder="Guests" min="1"><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><input type="number" id="act-target-gcd" class="input" placeholder="Target GCD" min="0" step="0.01"><input type="number" id="act-pryr-gcd" class="input" placeholder="PRYR GCD" min="0" step="0.01"></div><div class="flex-between mt-2"><button id="btn-confirm-activation" class="btn btn-green" style="width:48%">Activate</button><button id="btn-cancel-activation" class="btn btn-outline" style="width:48%">Cancel</button></div></div></div>
-    </main>
-    <nav id="bottom-nav">
-        <button class="nav-btn active" data-view="home"><span>🏠</span>Home</button>
-        <button class="nav-btn" data-view="schedule"><span>📅</span>Schedule</button>
-        <button class="nav-btn" data-view="report"><span>📋</span>Report</button>
-        <button class="nav-btn" data-view="inventory"><span>📦</span>Stock</button>
-        <button class="nav-btn" data-view="settings"><span>⚙️</span>Settings</button>
+<!-- === END OF CHUNK 1: STYLES. APPEND CHUNK 2 BELOW === -->
+    <!-- === APP NAVIGATION === -->
+    <nav class="bottom-nav">
+        <button class="nav-btn active" data-target="screen-home"><div class="nav-icon">🏠</div>Home</button>
+        <button class="nav-btn" data-target="screen-setup"><div class="nav-icon">📋</div>Setup</button>
+        <button class="nav-btn" data-target="screen-rounds"><div class="nav-icon">⏱️</div>Rounds</button>
+        <button class="nav-btn" data-target="screen-eod"><div class="nav-icon">📈</div>EOD</button>
+        <button class="nav-btn" data-target="screen-menu"><div class="nav-icon">⚙️</div>Menu</button>
     </nav>
-    <script>
-        // ========== UTILS ==========
-        const toast = document.getElementById('toast');
-        function showToast(msg, dur=2000){ toast.textContent=msg; toast.classList.add('show'); setTimeout(()=>toast.classList.remove('show'), dur); }
-        function timeToMin(t){ const [h,m]=t.split(':').map(Number); return h*60+m; }
-        function minToTime(m){ const h=Math.floor(m/60), mm=m%60; return `${String(h).padStart(2,'0')}:${String(mm).padStart(2,'0')}`; }
 
-        // ========== DATABASE ==========
-        const DB_NAME='apm_engine_v4', DB_VERSION=1; let dbInstance;
-        const db={
-            init(){return new Promise((resolve,reject)=>{const req=indexedDB.open(DB_NAME,DB_VERSION);req.onupgradeneeded=e=>{const d=e.target.result;['contracts','months','voyages','itineraries','roster','schedules','gallery_config','daily_revenue','inventory','capture_counts','sales'].forEach(s=>{if(!d.objectStoreNames.contains(s))d.createObjectStore(s,{keyPath:'id'})})};req.onsuccess=e=>{dbInstance=e.target.result;resolve(dbInstance)};req.onerror=e=>reject(e.target.error)})},
-            put(s,d){return new Promise((res,rej)=>{const t=dbInstance.transaction(s,'readwrite');const r=t.objectStore(s).put(d);r.onsuccess=()=>res(r.result);r.onerror=e=>rej(e.target.error)})},
-            get(s,k){return new Promise((res,rej)=>{const t=dbInstance.transaction(s,'readonly');const r=t.objectStore(s).get(k);r.onsuccess=()=>res(r.result);r.onerror=e=>rej(e.target.error)})},
-            getAll(s){return new Promise((res,rej)=>{const t=dbInstance.transaction(s,'readonly');const r=t.objectStore(s).getAll();r.onsuccess=()=>res(r.result);r.onerror=e=>rej(e.target.error)})},
-            getAllByIndex(s,i,v){return new Promise((res,rej)=>{const t=dbInstance.transaction(s,'readonly');const r=t.objectStore(s).index(i).getAll(v);r.onsuccess=()=>res(r.result);r.onerror=e=>rej(e.target.error)})},
-            clearStore(s){return new Promise((res,rej)=>{const t=dbInstance.transaction(s,'readwrite');const r=t.objectStore(s).clear();r.onsuccess=()=>res();r.onerror=e=>rej(e.target.error)})}
+    <!-- === SCREEN 1: DASHBOARD (HOME) === -->
+    <section id="screen-home" class="screen active">
+        <!-- Live Voyage & PRYR Banner -->
+        <div class="live-banner">
+            <div class="metric-row">
+                <span>Voyage GCD Target:</span>
+                <span id="ui-voyage-gcd" class="status-indicator status-yellow">0.00 / 4.50</span>
+            </div>
+            <div class="metric-row">
+                <span>Monthly vs PRYR:</span>
+                <span id="ui-pryr-pacing" class="status-indicator status-green">+2.4%</span>
+            </div>
+            <div class="metric-row" style="margin-top: 10px; font-size: 14px;">
+                <span>Ship Revenue:</span>
+                <span id="ui-ship-rev">$0.00</span>
+            </div>
+        </div>
+
+        <!-- Vacation Mode Warning (Hidden by default) -->
+        <div id="vacation-warning" class="card" style="display: none; background: var(--warning);">
+            <strong>🌴 Vacation Mode Active</strong><br>
+            No active contract. App is in Read-Only archive mode.
+        </div>
+
+        <div class="card">
+            <div class="card-title">Daily Operations</div>
+            <div class="flex-between" style="margin-bottom: 12px;">
+                <span>Is today Elegant Night?</span>
+                <input type="checkbox" id="toggle-elegant" style="transform: scale(1.5);">
+            </div>
+            <button class="btn btn-secondary" id="btn-morning-checklist">🌅 Morning Checklist</button>
+        </div>
+
+        <div class="card">
+            <div class="card-title">Manager Scratchpad</div>
+            <textarea id="ui-scratchpad" rows="4" placeholder="Jot down cabin requests, print orders, or complaints here..."></textarea>
+        </div>
+    </section>
+
+    <!-- === SCREEN 2: DAILY SETUP (SPEED GRID) === -->
+    <section id="screen-setup" class="screen">
+        <div class="card" id="setup-controls">
+            <div class="card-title">Evening Roster Setup</div>
+            <select id="select-evening-role">
+                <option value="" disabled selected>1. Select Duty...</option>
+                <option value="portrait_500">5:00 PM Portrait</option>
+                <option value="portrait_530">5:30 PM Portrait</option>
+                <option value="dining_room">Dining Room</option>
+                <option value="gallery_400">Gallery 4:00 PM</option>
+                <option value="gallery_530">Gallery 5:30 PM</option>
+                <option value="copy_side">Debark Copy Side</option>
+                <option value="assistant_lab">Assistant Lab Tech</option>
+                <option value="print_shop">Print Shop Specialist</option>
+            </select>
+
+            <div style="margin-bottom: 10px; font-weight: bold; color: var(--primary);">2. Tap Team Numbers:</div>
+            
+            <!-- Number Pad generated by JS based on team size -->
+            <div id="setup-number-pad" class="speed-grid">
+                <!-- Buttons injected here -->
+            </div>
+
+            <button id="btn-lock-schedule" class="btn">Lock & Generate Matrix</button>
+            <button id="btn-edit-schedule" class="btn btn-secondary" style="display: none;">Unlock & Edit</button>
+        </div>
+
+        <!-- Matrix Output Display -->
+        <div class="card" id="schedule-output" style="display: none;">
+            <div class="card-title">Generated Shift Matrix</div>
+            <div id="break-cascade-list">
+                <!-- JS injects the calculated timeline here -->
+            </div>
+        </div>
+    </section>
+
+    <!-- === SCREEN 3: FLOOR ROUNDS === -->
+    <section id="screen-rounds" class="screen">
+        <div class="card">
+            <div class="card-title">Live Pacing Tracker</div>
+            <p style="font-size: 13px; color: var(--text-muted);">Enter capture counts from camera screens mid-shift.</p>
+        </div>
+        
+        <div id="rounds-container">
+            <!-- JS dynamically injects portrait shooters here -->
+            <!-- Example Template: 
+            <div class="card">
+                <div class="flex-between" style="margin-bottom: 8px;"><strong>#4 - John Doe</strong> <span class="badge status-green">+40 pace</span></div>
+                <div class="input-row"><label>Round 1:</label><input type="number" inputmode="numeric"></div>
+                <div class="input-row"><label>Round 2:</label><input type="number" inputmode="numeric"></div>
+            </div> 
+            -->
+        </div>
+    </section>
+
+    <!-- === SCREEN 4: END OF DAY (PRODUCTIVITY) === -->
+    <section id="screen-eod" class="screen">
+        <div class="card">
+            <div class="card-title">Daily Revenue</div>
+            <div class="input-row">
+                <label>Ship Revenue ($):</label>
+                <input type="number" id="input-ship-rev" inputmode="numeric">
+            </div>
+            <div class="input-row">
+                <label>DS / Retail ($):</label>
+                <input type="number" id="input-ds-rev" inputmode="numeric">
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">Capture Counts (Lab Server)</div>
+            <div id="eod-capture-inputs">
+                <!-- JS injects pre-filled input rows based on Roster -->
+            </div>
+        </div>
+
+        <button id="btn-generate-summary" class="btn">Copy Manager Summary</button>
+    </section>
+
+    <!-- === SCREEN 5: MAIN MENU & SETTINGS === -->
+    <section id="screen-menu" class="screen">
+        
+        <div class="card">
+            <div class="card-title">Data & Architecture</div>
+            <button class="btn btn-secondary" onclick="document.getElementById('screen-analytics').classList.add('active'); document.getElementById('screen-menu').classList.remove('active');">📊 Performance Leaderboard</button>
+            <button class="btn btn-secondary" onclick="document.getElementById('screen-inventory').classList.add('active'); document.getElementById('screen-menu').classList.remove('active');">📦 Inventory & Audits</button>
+        </div>
+
+        <div class="card">
+            <div class="card-title flex-between">
+                Contract Management
+                <span id="ui-current-mode" class="badge">PRINT</span>
+            </div>
+            <button class="btn btn-secondary" id="btn-voyage-wizard">Start New Voyage (Wizard)</button>
+            <button class="btn btn-secondary" id="btn-crew-roster">Manage Crew Roster</button>
+        </div>
+
+        <div class="card">
+            <div class="card-title">Offline Safety Net</div>
+            <p style="font-size: 12px; color: var(--text-muted); margin-top: 0;">Use this if Safari clears cache or when transferring phones.</p>
+            <div class="speed-grid" style="grid-template-columns: 1fr 1fr;">
+                <button class="btn btn-secondary" id="btn-export-db">Export Data</button>
+                <button class="btn btn-secondary" id="btn-import-db">Import Data</button>
+            </div>
+            <button id="btn-force-update" class="btn btn-danger" style="margin-top: 10px;">Check for App Update</button>
+            <div style="text-align: center; font-size: 11px; color: var(--text-muted); margin-top: 5px;">App Version: v1.0.0</div>
+        </div>
+    </section>
+
+    <!-- === SUB-SCREEN: ANALYTICS (Hidden by default) === -->
+    <section id="screen-analytics" class="screen" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-color); z-index: 2000; overflow-y: auto;">
+        <div style="padding: 16px; padding-top: env(safe-area-inset-top);">
+            <button class="btn btn-secondary" onclick="document.getElementById('screen-analytics').classList.remove('active'); document.getElementById('screen-menu').classList.add('active');">⬅ Back to Menu</button>
+            <div class="card" style="margin-top: 16px;">
+                <div class="card-title">Cruise End Reconciliation</div>
+                <p style="font-size: 13px;">Input final "Photos Sold" to calculate efficiency.</p>
+                <button class="btn" id="btn-run-efficiency">Calculate Leaderboard</button>
+            </div>
+            <div id="leaderboard-output">
+                <!-- JS Injects the 3 Buckets (ProPortraits, Collectibles, Funshots) here -->
+            </div>
+        </div>
+    </section>
+
+    <!-- === SUB-SCREEN: INVENTORY (Hidden by default) === -->
+    <section id="screen-inventory" class="screen" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-color); z-index: 2000; overflow-y: auto;">
+        <div style="padding: 16px; padding-top: env(safe-area-inset-top);">
+            <button class="btn btn-secondary" onclick="document.getElementById('screen-inventory').classList.remove('active'); document.getElementById('screen-menu').classList.add('active');">⬅ Back to Menu</button>
+            
+            <div class="card" style="margin-top: 16px;">
+                <div class="card-title flex-between">
+                    External Port Order 
+                    <span class="badge status-red">Low Stock Alert</span>
+                </div>
+                <div id="inventory-external-list" style="font-size: 14px;">
+                    <!-- JS highlights items below Par Level here -->
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">Ship Storeroom Checklist</div>
+                <div id="inventory-internal-list" style="font-size: 14px;">
+                    <!-- JS injects daily run needs here -->
+                </div>
+            </div>
+        </div>
+    </section>
+
+<!-- === END OF CHUNK 2: HTML SKELETON. APPEND CHUNK 3 BELOW === -->
+<script>
+/* === 1. GLOBAL STATE & CONFIG === */
+    const DB_NAME = 'ShipPhotoOS_DB';
+    const DB_VERSION = 1;
+    let db; // Holds the active database connection
+
+    // The Master State Object: Tracks exactly where we are in your career/contract
+    const AppState = {
+        activeContract: null,
+        currentVoyage: null,
+        todayLog: null, 
+        roster: [], // The active crew list
+        vacationMode: false
+    };
+
+    /* === 2. SERVICE WORKER & APP UPDATE (CACHE BUSTER) === */
+    // Registers the offline engine silently in the background
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('sw.js').catch(err => console.log('SW setup deferred for local testing.'));
+        });
+    }
+
+    // Force updates the app if you pushed new code to GitHub
+    async function forceAppUpdate() {
+        if (confirm("This will clear the app cache and download the latest version from GitHub. Ensure you have Wi-Fi. Continue?")) {
+            if ('caches' in window) {
+                const cacheNames = await caches.keys();
+                for (let name of cacheNames) await caches.delete(name);
+            }
+            if ('serviceWorker' in navigator) {
+                const registrations = await navigator.serviceWorker.getRegistrations();
+                for (let reg of registrations) await reg.unregister();
+            }
+            window.location.reload(true);
+        }
+    }
+
+    // Bind the update button from Chunk 2
+    document.getElementById('btn-force-update').addEventListener('click', forceAppUpdate);
+
+
+    /* === 3. INDEXEDDB SETUP (THE OFFLINE DRAWERS) === */
+    function openDatabase() {
+        return new Promise((resolve, reject) => {
+            const request = indexedDB.open(DB_NAME, DB_VERSION);
+
+            request.onupgradeneeded = (event) => {
+                const localDb = event.target.result;
+
+                // Drawer A: Contracts (Ship, Dates, Print/Digital Mode)
+                if (!localDb.objectStoreNames.contains('contracts')) {
+                    const store = localDb.createObjectStore('contracts', { keyPath: 'id' });
+                    store.createIndex('status', 'status', { unique: false }); // Active, Completed, Upcoming
+                }
+
+                // Drawer B: Voyages (The Cruises)
+                if (!localDb.objectStoreNames.contains('voyages')) {
+                    const store = localDb.createObjectStore('voyages', { keyPath: 'id' });
+                    store.createIndex('contractId', 'contractId', { unique: false });
+                    store.createIndex('status', 'status', { unique: false });
+                }
+
+                // Drawer C: Crew Roster (Permanent IDs vs Schedule Slots)
+                if (!localDb.objectStoreNames.contains('crew')) {
+                    const store = localDb.createObjectStore('crew', { keyPath: 'id' });
+                    store.createIndex('contractId', 'contractId', { unique: false });
+                    store.createIndex('scheduleNumber', 'scheduleNumber', { unique: false });
+                }
+
+                // Drawer D: Daily Logs (Roster layouts, Floor Rounds, EOD data)
+                if (!localDb.objectStoreNames.contains('logs')) {
+                    // Key will be YYYY-MM-DD
+                    const store = localDb.createObjectStore('logs', { keyPath: 'id' });
+                    store.createIndex('voyageId', 'voyageId', { unique: false });
+                }
+
+                // Drawer E: Performance Analytics (Reconciled at End of Cruise)
+                if (!localDb.objectStoreNames.contains('performance')) {
+                    const store = localDb.createObjectStore('performance', { keyPath: 'id' });
+                    store.createIndex('voyageId', 'voyageId', { unique: false });
+                    store.createIndex('crewId', 'crewId', { unique: false });
+                }
+
+                // Drawer F: Inventory (Internal Ship Runs & External Port Orders)
+                if (!localDb.objectStoreNames.contains('inventory')) {
+                    const store = localDb.createObjectStore('inventory', { keyPath: 'id' });
+                    store.createIndex('contractId', 'contractId', { unique: false });
+                    store.createIndex('type', 'type', { unique: false }); 
+                }
+            };
+
+            request.onsuccess = (event) => {
+                db = event.target.result;
+                resolve(db);
+            };
+
+            request.onerror = (event) => {
+                console.error('Database Error:', event.target.error);
+                reject(event.target.error);
+            };
+        });
+    }
+
+    /* === 4. CRUD OPERATIONS (PROMISIFIED HELPERS) === */
+    // These wrappers make reading/writing data incredibly clean in our math engines.
+
+    function dbPut(storeName, data) {
+        return new Promise((resolve, reject) => {
+            const transaction = db.transaction([storeName], 'readwrite');
+            const store = transaction.objectStore(storeName);
+            const request = store.put(data);
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+        });
+    }
+
+    function dbGet(storeName, key) {
+        return new Promise((resolve, reject) => {
+            const transaction = db.transaction([storeName], 'readonly');
+            const store = transaction.objectStore(storeName);
+            const request = store.get(key);
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+        });
+    }
+
+    function dbGetAll(storeName) {
+        return new Promise((resolve, reject) => {
+            const transaction = db.transaction([storeName], 'readonly');
+            const store = transaction.objectStore(storeName);
+            const request = store.getAll();
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+        });
+    }
+
+    function dbGetByIndex(storeName, indexName, key) {
+        return new Promise((resolve, reject) => {
+            const transaction = db.transaction([storeName], 'readonly');
+            const store = transaction.objectStore(storeName);
+            const index = store.index(indexName);
+            const request = index.getAll(key);
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+        });
+    }
+
+    /* === 5. EXPORT / IMPORT BACKUPS (THE OFFLINE SAFETY NET) === */
+    
+    // EXPORT: Packages the entire database into a JSON file
+    async function exportDatabase() {
+        try {
+            const stores = ['contracts', 'voyages', 'crew', 'logs', 'performance', 'inventory'];
+            const backupData = {};
+            
+            for (let storeName of stores) {
+                backupData[storeName] = await dbGetAll(storeName);
+            }
+
+            const jsonStr = JSON.stringify(backupData, null, 2);
+            const blob = new Blob([jsonStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `ShipPhotoOS_Backup_${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            alert("Database exported successfully! Save this to your iOS Files.");
+        } catch (error) {
+            console.error("Export failed:", error);
+            alert("Failed to export database.");
+        }
+    }
+
+    // IMPORT: Reads a JSON file and overwrites the local database
+    function importDatabase(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+            try {
+                const data = JSON.parse(e.target.result);
+                
+                for (let storeName of Object.keys(data)) {
+                    if (data[storeName].length > 0) {
+                        const transaction = db.transaction([storeName], 'readwrite');
+                        const store = transaction.objectStore(storeName);
+                        
+                        // Clear existing data in store before importing to avoid conflicts
+                        store.clear();
+                        
+                        data[storeName].forEach(item => {
+                            store.put(item);
+                        });
+                    }
+                }
+                
+                alert("Database imported successfully! The app will now reload.");
+                window.location.reload();
+            } catch (error) {
+                console.error("Import failed:", error);
+                alert("Failed to import. Please ensure this is a valid ShipPhoto OS backup file.");
+            }
+        };
+        reader.readAsText(file);
+    }
+
+    // Bind Export/Import Buttons
+    document.getElementById('btn-export-db').addEventListener('click', exportDatabase);
+    
+    const hiddenFileInput = document.createElement('input');
+    hiddenFileInput.type = 'file';
+    hiddenFileInput.accept = '.json';
+    hiddenFileInput.style.display = 'none';
+    hiddenFileInput.addEventListener('change', importDatabase);
+    document.body.appendChild(hiddenFileInput);
+    
+    document.getElementById('btn-import-db').addEventListener('click', () => {
+        if(confirm("WARNING: Importing a backup will overwrite all current data. Continue?")) {
+            hiddenFileInput.click();
+        }
+    });
+
+/* === END OF CHUNK 3 & 4: DATA LAYER. APPEND CHUNK 5 BELOW === */
+    /* === 6. LOGIC ENGINE UTILITIES (TIME MATH) === */
+    // Helper to add minutes to a "HH:MM" string and return "HH:MM"
+    function addMinutes(timeStr, mins) {
+        if (!timeStr) return "00:00";
+        let [hours, minutes] = timeStr.split(':').map(Number);
+        let date = new Date();
+        date.setHours(hours, minutes, 0, 0);
+        date.setMinutes(date.getMinutes() + mins);
+        
+        let outHours = date.getHours().toString().padStart(2, '0');
+        let outMins = date.getMinutes().toString().padStart(2, '0');
+        return `${outHours}:${outMins}`;
+    }
+
+    // Helper to calculate the difference in minutes between two "HH:MM" strings
+    function getMinuteDifference(startStr, endStr) {
+        if (!startStr || !endStr) return 0;
+        let [sH, sM] = startStr.split(':').map(Number);
+        let [eH, eM] = endStr.split(':').map(Number);
+        let start = (sH * 60) + sM;
+        let end = (eH * 60) + eM;
+        return end - start;
+    }
+
+
+    /* === 7. LOGIC ENGINE: SMART BREAK CASCADE === */
+    /**
+     * Calculates the entire evening shift matrix based on the assigned roles.
+     * Rules applied:
+     * - 5:30 PM Portrait shooters get ZERO breaks.
+     * - Dining Room (DR) team cascades to relieve 5:00 PM shooters.
+     * - Elegant Night = 20 min breaks. Casual Night = 30 min breaks.
+     * - Assistant Lab Tech acts as overflow coverage if the DR team isn't large enough.
+     * 
+     * @param {Array} rosterAssignments - Array of objects: { scheduleNumber, role, name }
+     * @param {boolean} isElegantNight - Boolean driving the break duration
+     * @returns {Array} timeline - Ordered list of breaks and shifts
+     */
+    function calculateBreakCascade(rosterAssignments, isElegantNight) {
+        let timeline = [];
+        const breakDuration = isElegantNight ? 20 : 30;
+        
+        // 1. Categorize the assigned team
+        let drTeam = [];
+        let portrait500 = [];
+        let portrait530 = [];
+        let assistantLab = null;
+        let printShop = null;
+
+        rosterAssignments.forEach(crew => {
+            if (crew.role === 'dining_room') drTeam.push(crew);
+            else if (crew.role === 'portrait_500') portrait500.push(crew);
+            else if (crew.role === 'portrait_530') portrait530.push(crew);
+            else if (crew.role === 'assistant_lab') assistantLab = crew;
+            else if (crew.role === 'print_shop') printShop = crew;
+        });
+
+        // Rule: 5:30 PM Shooters get zero breaks. Just log their shift.
+        portrait530.forEach(crew => {
+            timeline.push({
+                crew: crew.name,
+                type: 'Continuous Shift',
+                time: '17:30 - Close',
+                notes: 'No break required (5:30 PM start).'
+            });
+        });
+
+        if (portrait500.length === 0) {
+             timeline.push({
+                crew: 'System',
+                type: 'Notice',
+                time: '--:--',
+                notes: 'No 5:00 PM shooters assigned. Break cascade skipped.'
+            });
+            return timeline;
+        }
+
+        // 2. Determine DR Team availability (They finish early seating around 19:00, break until 19:30/19:20)
+        let drReliefStartTime = isElegantNight ? "19:20" : "19:30";
+        let availableRelievers = [...drTeam];
+        
+        // Add Print Shop Specialist as a reliever ONLY on Elegant Night
+        if (isElegantNight && printShop) {
+            availableRelievers.push(printShop);
+        }
+
+        // 3. The Cascade: Match 5:00 PM shooters to available relievers
+        // Rule: One reliever can cover up to 2 breaks (e.g., 19:30-20:00, then 20:00-20:30)
+        let currentShooterIndex = 0;
+
+        availableRelievers.forEach(reliever => {
+            // Reliever's own break
+            timeline.push({
+                crew: reliever.name,
+                type: 'Own Break',
+                time: `19:00 - ${drReliefStartTime}`,
+                notes: `Finished early seating.`
+            });
+
+            // Reliever covers up to 2 shooters
+            let reliefTimeCursor = drReliefStartTime;
+            let covers = 0;
+
+            while (covers < 2 && currentShooterIndex < portrait500.length) {
+                let shooter = portrait500[currentShooterIndex];
+                let breakEnd = addMinutes(reliefTimeCursor, breakDuration);
+                
+                timeline.push({
+                    crew: shooter.name,
+                    type: 'Break',
+                    time: `${reliefTimeCursor} - ${breakEnd}`,
+                    notes: `Covered by ${reliever.name}`
+                });
+
+                reliefTimeCursor = breakEnd;
+                currentShooterIndex++;
+                covers++;
+            }
+        });
+
+        // 4. Overflow Fallback (Assistant Lab Tech)
+        // If the DR team is small, we might still have 5:00 PM shooters who need a break.
+        if (currentShooterIndex < portrait500.length) {
+            if (assistantLab) {
+                let reliefTimeCursor = drReliefStartTime;
+                while (currentShooterIndex < portrait500.length) {
+                    let shooter = portrait500[currentShooterIndex];
+                    let breakEnd = addMinutes(reliefTimeCursor, breakDuration);
+                    
+                    timeline.push({
+                        crew: shooter.name,
+                        type: 'Break',
+                        time: `${reliefTimeCursor} - ${breakEnd}`,
+                        notes: `Covered by ${assistantLab.name} (Overflow)`
+                    });
+
+                    reliefTimeCursor = breakEnd;
+                    currentShooterIndex++;
+                }
+            } else {
+                // We have uncovered shooters and no Assistant Lab Tech assigned
+                while (currentShooterIndex < portrait500.length) {
+                    timeline.push({
+                        crew: portrait500[currentShooterIndex].name,
+                        type: 'WARNING: Uncovered Break',
+                        time: 'Requires manual assignment',
+                        notes: 'Not enough DR relievers or Lab Techs assigned.'
+                    });
+                    currentShooterIndex++;
+                }
+            }
+        }
+
+        // Sort the timeline chronologically for a clean UI output
+        timeline.sort((a, b) => {
+            if (a.time.includes('--') || a.time.includes('WARNING')) return 1;
+            if (b.time.includes('--') || b.time.includes('WARNING')) return -1;
+            let timeA = a.time.split(' - ')[0];
+            let timeB = b.time.split(' - ')[0];
+            return timeA.localeCompare(timeB);
+        });
+
+        return timeline;
+    }
+
+/* === END OF CHUNK 5: BREAK CASCADE MATH. APPEND CHUNK 6 BELOW === */
+    /* === 8. LOGIC ENGINE: COPY SIDE TETRIS (DEBARK NIGHT) === */
+    /**
+     * Solves the Debark Night desk coverage puzzle.
+     * Rules: 
+     * - Requires 480 total minutes of coverage (1pax 17:00-18:00, 2pax 18:00-21:00, 1pax 21:00-22:00).
+     * - ONLY Gallery Photographers are eligible.
+     * - Total minutes are divided absolutely equally among the eligible team.
+     * - Shifts are assigned in blocks (up to 2 splits per person) to allow for their 30-min breaks.
+     * 
+     * @param {Array} rosterAssignments - The active evening roster array
+     * @returns {Object} puzzleSolution - The mathematical breakdown and shift assignments
+     */
+    function calculateCopySideTetris(rosterAssignments) {
+        const TOTAL_DESK_MINUTES = 480;
+        
+        // 1. Filter out everyone EXCEPT Gallery roles
+        let galleryTeam = rosterAssignments.filter(crew => 
+            crew.role === 'gallery_400' || crew.role === 'gallery_530'
+        );
+
+        if (galleryTeam.length === 0) {
+            return { error: "No Gallery team assigned. Cannot generate Copy Side matrix." };
+        }
+
+        // 2. The Golden Rule: Absolute fairness
+        let fairShareMinutes = Math.round(TOTAL_DESK_MINUTES / galleryTeam.length);
+        let assignments = [];
+
+        // 3. The Split Logic (Blocks of 30, 60, 90)
+        galleryTeam.forEach((crew, index) => {
+            let shifts = [];
+            let remaining = fairShareMinutes;
+            
+            // If the fair share is large, split it into two shifts to preserve gallery floor flow
+            if (remaining > 90) {
+                shifts.push({ duration: 60, label: "Shift 1 (Peak Rush)" });
+                shifts.push({ duration: remaining - 60, label: "Shift 2 (Slow Hours)" });
+            } else if (remaining > 60) {
+                shifts.push({ duration: Math.floor(remaining / 2), label: "Shift 1" });
+                shifts.push({ duration: Math.ceil(remaining / 2), label: "Shift 2" });
+            } else {
+                // Done in one solid block
+                shifts.push({ duration: remaining, label: "Continuous Shift" });
+            }
+            
+            assignments.push({
+                crew: crew.name,
+                role: crew.role,
+                totalAssigned: fairShareMinutes,
+                shifts: shifts,
+                notes: `Interlocks with ${crew.role === 'gallery_400' ? 'two 30-min breaks' : 'one 30-min break'}`
+            });
+        });
+
+        return {
+            totalRequired: TOTAL_DESK_MINUTES,
+            fairShare: fairShareMinutes,
+            assignments: assignments
+        };
+    }
+
+
+    /* === 9. LOGIC ENGINE: EFFICIENCY & LEADERBOARD === */
+    /**
+     * Parses the End-of-Cruise capture vs sales data to generate the Leaderboard.
+     * Rules:
+     * - Maps events to exactly 3 buckets: ProPortraits, Collectibles, Funshots.
+     * - Primary Rank: Total Volume Sold. Secondary Rank: Overall Efficiency %.
+     * - Smart Ghosting: If 0 taken in a category, that category is hidden for that person.
+     * 
+     * @param {Array} captureData - Array of objects: { crewId, name, category, takenCount }
+     * @param {Array} salesData - Array of objects: { crewId, category, soldCount }
+     * @returns {Array} leaderboard - Sorted array of finalized crew performance objects
+     */
+    function generateEfficiencyLeaderboard(captureData, salesData) {
+        let crewMap = {};
+
+        // Helper to initialize a crew member in the map
+        const initCrewProfile = (id, name) => {
+            if (!crewMap[id]) {
+                crewMap[id] = {
+                    crewId: id, 
+                    name: name,
+                    totalVolume: 0,
+                    totalTaken: 0,
+                    categories: {
+                        ProPortraits: { sold: 0, taken: 0 },
+                        Collectibles: { sold: 0, taken: 0 },
+                        Funshots: { sold: 0, taken: 0 }
+                    }
+                };
+            }
         };
 
-        // ========== STATE ==========
-        const state={contractId:null, voyageId:null, mode:'print', abbr:'', ops:{diningStart:'17:45',diningEnd:'20:00',copyBusyStart:'18:00',copyBusyEnd:'21:00'}, isLateNight:false, checklist:[], notes:'', scheduleHistory:[]};
-
-        // ========== NAVIGATION ==========
-        function switchView(viewName){
-            document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
-            const btn=document.querySelector(`[data-view="${viewName}"]`);
-            if(btn)btn.classList.add('active');
-            document.querySelectorAll('.app-view').forEach(v=>v.classList.add('hidden'));
-            const el=document.getElementById(`view-${viewName}`);
-            if(el)el.classList.remove('hidden');
-            if(viewName==='home')renderHome();
-            if(viewName==='schedule')renderScheduleView();
-            if(viewName==='report')renderReportView();
-            if(viewName==='inventory')renderInventoryView();
-        }
-        document.querySelectorAll('.nav-btn').forEach(b=>b.addEventListener('click',()=>switchView(b.dataset.view)));
-        document.getElementById('btn-open-settings').addEventListener('click',()=>switchView('settings'));
-
-        // ========== BOOT ==========
-        window.addEventListener('DOMContentLoaded',async()=>{
-            await db.init();
-            const contract=(await db.getAll('contracts')).find(c=>c.status==='active');
-            if(contract){
-                state.contractId=contract.id; state.mode=contract.mode; state.abbr=contract.abbr||'';
-                document.getElementById('header-voyage-id').innerText=`${contract.shipName} - ${contract.mode}`;
-                const activeV=(await db.getAll('voyages')).find(v=>v.status==='active');
-                if(activeV){state.voyageId=activeV.voyageId; renderHome();} else switchView('settings');
-            } else switchView('settings');
+        // 1. Ingest Capture Data (The denominator)
+        captureData.forEach(capture => {
+            initCrewProfile(capture.crewId, capture.name);
+            let cat = capture.category; // Must be exactly: 'ProPortraits', 'Collectibles', or 'Funshots'
+            if (crewMap[capture.crewId].categories[cat]) {
+                crewMap[capture.crewId].categories[cat].taken += Number(capture.takenCount);
+                crewMap[capture.crewId].totalTaken += Number(capture.takenCount);
+            }
         });
 
-        // ========== HOME ==========
-async function renderHome(){
-            // checklist
-            const defaultItems=['Check schedule','Verify backdrops','Assign breaks','Mid-night capture check','Enter revenue'];
-            const today=new Date().toISOString().split('T')[0];
-            const saved=JSON.parse(localStorage.getItem('checklist_'+today)||'[]');
-            const list=document.getElementById('checklist-container');
-            list.innerHTML=defaultItems.map((item,i)=>`<label class="flex-between"><span>${item}</span><input type="checkbox" ${saved[i]?'checked':''} data-idx="${i}"></label>`).join('');
-            list.querySelectorAll('input').forEach(inp=>inp.addEventListener('change',()=>{
-                const arr=defaultItems.map((_,j)=>list.querySelector(`input[data-idx="${j}"]`)?.checked||false);
-                localStorage.setItem('checklist_'+today,JSON.stringify(arr));
-            }));
-            // revenue bars & history
-            if(state.voyageId){
-                const v=await db.get('voyages',state.voyageId);
-                if(v&&v.guests){
-                    const start=new Date(v.startDate), end=new Date(v.endDate), days=Math.max(1,(end-start)/86400000);
-                    const totalTarget=v.guests*v.targetGcd*days;
-                    const revs=await db.getAllByIndex('daily_revenue','voyageId',state.voyageId);
-                    let shipRev=0; revs.forEach(r=>shipRev+=r.shipRevenue);
-                    const pct=Math.min(100,(shipRev/totalTarget)*100);
-                    document.getElementById('home-voyage-gcd').innerText=`$${shipRev.toLocaleString()}/$${totalTarget.toLocaleString()}`;
-                    document.getElementById('home-voyage-bar').style.width=pct+'%';
-                    document.getElementById('home-total-rev').innerText=`$${shipRev.toLocaleString()}`;
-                    // monthly
-                    if(v.monthId){
-                        const month=await db.get('months',v.monthId);
-                        if(month){
-                            const monthVoyages=await db.getAllByIndex('voyages','monthId',v.monthId);
-                            let monthRev=0; for(const mv of monthVoyages){const r=await db.getAllByIndex('daily_revenue','voyageId',mv.voyageId); r.forEach(d=>monthRev+=d.shipRevenue);}
-                            document.getElementById('home-month-gcd').innerText=`$${monthRev.toLocaleString()}/$${month.targetGcd.toLocaleString()}`;
-                            document.getElementById('home-month-bar').style.width=Math.min(100,(monthRev/month.targetGcd)*100)+'%';
-                            if(month.pryrGcd){
-                                document.getElementById('home-pryr-gcd').innerText=`$${monthRev.toLocaleString()}/$${month.pryrGcd.toLocaleString()}`;
-                                document.getElementById('home-pryr-bar').style.width=Math.min(100,(monthRev/month.pryrGcd)*100)+'%';
-                            }
-                        }
+        // 2. Ingest Sales Data (The numerator)
+        salesData.forEach(sale => {
+            if (crewMap[sale.crewId]) { // Ensure we captured them on the floor first
+                let cat = sale.category;
+                if (crewMap[sale.crewId].categories[cat]) {
+                    crewMap[sale.crewId].categories[cat].sold += Number(sale.soldCount);
+                    crewMap[sale.crewId].totalVolume += Number(sale.soldCount);
+                }
+            }
+        });
+
+        // 3. Calculate Percentages & Apply Ghosting
+        let leaderboard = Object.values(crewMap).map(crew => {
+            // Overall Efficiency
+            crew.overallEfficiency = crew.totalTaken > 0 
+                ? ((crew.totalVolume / crew.totalTaken) * 100).toFixed(1) 
+                : "0.0";
+            
+            // Sub-category Efficiencies
+            Object.keys(crew.categories).forEach(cat => {
+                let bucket = crew.categories[cat];
+                // Smart Ghosting: If zero taken, return null so the UI can hide this bucket
+                bucket.efficiency = bucket.taken > 0 
+                    ? ((bucket.sold / bucket.taken) * 100).toFixed(1) 
+                    : null; 
+            });
+            
+            return crew;
+        });
+
+        // 4. Sort: Rank by Volume (Primary) then Efficiency (Secondary)
+        leaderboard.sort((a, b) => {
+            if (b.totalVolume !== a.totalVolume) {
+                return b.totalVolume - a.totalVolume; // Descending volume
+            }
+            return parseFloat(b.overallEfficiency) - parseFloat(a.overallEfficiency); // Descending efficiency if volume ties
+        });
+
+        return leaderboard;
+    }
+
+/* === END OF CHUNK 6: MATH ENGINES. APPEND CHUNK 7 BELOW === */
+    /* === 10. UI CONTROLLER: NAVIGATION === */
+    const navButtons = document.querySelectorAll('.nav-btn');
+    const screens = document.querySelectorAll('.screen');
+
+    navButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            // Remove active states
+            navButtons.forEach(b => b.classList.remove('active'));
+            screens.forEach(s => s.classList.remove('active'));
+            
+            // Add active state to clicked button and target screen
+            btn.classList.add('active');
+            const targetScreen = document.getElementById(btn.getAttribute('data-target'));
+            if (targetScreen) targetScreen.classList.add('active');
+            
+            // Scroll to top of screen for safety
+            window.scrollTo(0, 0);
+        });
+    });
+
+
+    /* === 11. UI CONTROLLER: DAILY SETUP (SPEED GRID) === */
+    let dailyAssignments = []; // Holds the active shift roster
+
+    /**
+     * Renders the thumb-friendly number pad.
+     * Defaults to 20 slots unless AppState overrides it.
+     */
+    function renderSpeedGrid(rosterSize = 20) {
+        const grid = document.getElementById('setup-number-pad');
+        grid.innerHTML = '';
+        
+        for (let i = 1; i <= rosterSize; i++) {
+            let btn = document.createElement('button');
+            btn.className = 'pad-btn';
+            btn.textContent = i;
+            btn.dataset.id = i;
+            
+            btn.addEventListener('click', () => {
+                const roleSelect = document.getElementById('select-evening-role');
+                const role = roleSelect.value;
+                if (!role) return alert('Select a duty from the dropdown first!');
+                
+                // Check if this number is already assigned
+                const existingIndex = dailyAssignments.findIndex(a => a.scheduleNumber === i);
+                
+                if (existingIndex > -1) {
+                    // Toggle Off (Undo)
+                    dailyAssignments.splice(existingIndex, 1);
+                    btn.classList.remove('selected');
+                } else {
+                    // Toggle On (Assign)
+                    // Retrieve real name from DB state if available, else placeholder
+                    const crewMember = AppState.roster.find(c => c.scheduleNumber === i) || { name: `Photographer #${i}` };
+                    
+                    dailyAssignments.push({
+                        scheduleNumber: i,
+                        role: role,
+                        name: crewMember.name
+                    });
+                    btn.classList.add('selected');
+                }
+            });
+            grid.appendChild(btn);
+        }
+    }
+
+    // Initialize an empty grid on boot
+    renderSpeedGrid(20);
+
+    // ACTION: Lock Schedule & Generate Matrix
+    document.getElementById('btn-lock-schedule').addEventListener('click', () => {
+        if (dailyAssignments.length === 0) return alert('No team members assigned! Tap the numbers to build the roster.');
+        
+        // 1. Lock the UI inputs
+        document.getElementById('setup-number-pad').style.pointerEvents = 'none';
+        document.getElementById('select-evening-role').disabled = true;
+        document.getElementById('btn-lock-schedule').style.display = 'none';
+        document.getElementById('btn-edit-schedule').style.display = 'block';
+        
+        // 2. Fetch data and run Math Engine (Chunk 5)
+        const isElegant = document.getElementById('toggle-elegant').checked;
+        const timeline = calculateBreakCascade(dailyAssignments, isElegant);
+        
+        // 3. Render the Break Matrix to the screen
+        const outputDiv = document.getElementById('break-cascade-list');
+        outputDiv.innerHTML = '';
+        
+        timeline.forEach(item => {
+            const div = document.createElement('div');
+            div.className = 'card';
+            div.style.marginBottom = '8px';
+            div.style.padding = '12px';
+            // Highlight warnings in red
+            const isWarning = item.type.includes('WARNING') ? 'color: var(--danger); font-weight: bold;' : '';
+            div.innerHTML = `<strong style="${isWarning}">${item.time}</strong> - ${item.crew} <br>
+                             <span style="font-size:12px; color:var(--text-muted)">${item.type}: ${item.notes}</span>`;
+            outputDiv.appendChild(div);
+        });
+
+        // 4. Run Copy Side Math if applicable (Chunk 6)
+        const hasCopySide = dailyAssignments.some(a => a.role === 'copy_side');
+        if (hasCopySide) {
+             const copyMatrix = calculateCopySideTetris(dailyAssignments);
+             
+             if (!copyMatrix.error) {
+                 const header = document.createElement('div');
+                 header.innerHTML = `<h4 style="margin-top:20px; margin-bottom:8px; color:var(--primary);">Debark Desk Matrix (Fair Share: ${copyMatrix.fairShare} mins)</h4>`;
+                 outputDiv.appendChild(header);
+
+                 copyMatrix.assignments.forEach(assign => {
+                     const shiftText = assign.shifts.map(s => `${s.duration}m`).join(' + ');
+                     const div = document.createElement('div');
+                     div.className = 'card';
+                     div.style.marginBottom = '8px';
+                     div.style.padding = '12px';
+                     div.innerHTML = `<strong>${assign.crew}</strong> - ${shiftText} <br>
+                                      <span style="font-size:12px; color:var(--text-muted)">${assign.notes}</span>`;
+                     outputDiv.appendChild(div);
+                 });
+             } else {
+                 outputDiv.innerHTML += `<div style="color:var(--danger); margin-top:10px;">${copyMatrix.error}</div>`;
+             }
+        }
+        
+        // Show output card
+        document.getElementById('schedule-output').style.display = 'block';
+        
+        // 5. Send assigned portrait shooters to the Floor Rounds and EOD screens
+        populateFloorRounds(dailyAssignments);
+        if (typeof populateEODInputs === 'function') populateEODInputs(dailyAssignments);
+    });
+
+    // ACTION: Undo / Edit Schedule
+    document.getElementById('btn-edit-schedule').addEventListener('click', () => {
+        // Unlock the UI
+        document.getElementById('setup-number-pad').style.pointerEvents = 'auto';
+        document.getElementById('select-evening-role').disabled = false;
+        document.getElementById('btn-lock-schedule').style.display = 'block';
+        document.getElementById('btn-edit-schedule').style.display = 'none';
+        document.getElementById('schedule-output').style.display = 'none';
+    });
+
+
+    /* === 12. UI CONTROLLER: FLOOR ROUNDS (MID-SHIFT PACING) === */
+    /**
+     * Dynamically builds the Floor Rounds screen based on the evening roster.
+     */
+    function populateFloorRounds(assignments) {
+        const container = document.getElementById('rounds-container');
+        container.innerHTML = '';
+        
+        // Isolate only the portrait photographers
+        const portraitShooters = assignments.filter(a => a.role === 'portrait_500' || a.role === 'portrait_530');
+        
+        if (portraitShooters.length === 0) {
+            container.innerHTML = '<div style="text-align:center; padding:20px; color:var(--text-muted)">No portrait shooters assigned tonight.</div>';
+            return;
+        }
+
+        portraitShooters.forEach(shooter => {
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.innerHTML = `
+                <div class="flex-between" style="margin-bottom: 12px;">
+                    <strong>#${shooter.scheduleNumber} - ${shooter.name}</strong> 
+                    <span class="badge status-indicator" id="badge-pace-${shooter.scheduleNumber}">Waiting...</span>
+                </div>
+                <div class="input-row">
+                    <label>Round 1:</label>
+                    <input type="number" inputmode="numeric" id="r1-${shooter.scheduleNumber}" placeholder="0">
+                </div>
+                <div class="input-row" style="border: none;">
+                    <label>Round 2:</label>
+                    <input type="number" inputmode="numeric" id="r2-${shooter.scheduleNumber}" placeholder="0">
+                </div>
+            `;
+            container.appendChild(card);
+            
+            // Live Event Listeners for Pacing Calculation
+            const r1 = card.querySelector(`#r1-${shooter.scheduleNumber}`);
+            const r2 = card.querySelector(`#r2-${shooter.scheduleNumber}`);
+            const badge = card.querySelector(`#badge-pace-${shooter.scheduleNumber}`);
+            
+            const calculatePace = () => {
+                const val1 = parseInt(r1.value) || 0;
+                const val2 = parseInt(r2.value) || 0;
+                
+                if (val1 > 0 && val2 > 0) {
+                    const diff = val2 - val1;
+                    badge.textContent = `+${diff} pace`;
+                    
+                    // Color Logic: Pacing threshold. Adjust > 20 and < 10 as needed based on actual ship traffic.
+                    if (diff >= 20) {
+                        badge.className = 'badge status-green';
+                    } else if (diff < 10) {
+                        badge.className = 'badge status-red';
+                    } else {
+                        badge.className = 'badge status-yellow';
                     }
-                    // revenue history
-                    const histDiv=document.getElementById('home-rev-history');
-                    if(revs.length){
-                        revs.sort((a,b)=>new Date(a.date)-new Date(b.date));
-                        histDiv.innerHTML=revs.map(r=>`<div class="flex-between"><span>${r.date}</span><strong>$${r.shipRevenue.toLocaleString()}</strong> (DS: $${r.dsRevenue||0})</div>`).join('');
-                    }else histDiv.innerHTML='<span class="text-muted">No revenue yet.</span>';
-                    // manifest
-                    const sched=await db.get('schedules',today);
-                    const man=document.getElementById('home-manifest');
-                    if(sched&&sched.shifts) man.innerHTML=sched.shifts.map(s=>`<div><strong>${s.crewName}</strong> ${(s.breaks||[]).join(', ')}</div>`).join('')||'No breaks';
-                    else man.innerHTML='<span class="text-muted">Not locked</span>';
+                } else {
+                    badge.textContent = 'Waiting...';
+                    badge.className = 'badge status-indicator';
                 }
-            }
-            document.getElementById('home-notes').value=state.notes;
-            document.getElementById('home-notes').addEventListener('input',e=>state.notes=e.target.value);
-            // Revenue save button
-            document.getElementById('btn-save-revenue').addEventListener('click',async()=>{
-                if(!state.voyageId)return showToast('No active voyage.');
-                const shipRev=parseFloat(document.getElementById('home-ship-rev').value);
-                const dsRev=parseFloat(document.getElementById('home-ds-rev').value)||0;
-                if(isNaN(shipRev))return showToast('Enter ship revenue.');
-                const today=new Date().toISOString().split('T')[0];
-                await db.put('daily_revenue',{id:`${state.voyageId}_${today}`,voyageId:state.voyageId,date:today,shipRevenue:shipRev,dsRevenue:dsRev});
-                document.getElementById('home-ship-rev').value=''; document.getElementById('home-ds-rev').value='';
-                showToast('Revenue locked.');
-                renderHome();
-            });
-    document.getElementById('btn-elegant-toggle').addEventListener('click',async()=>{
-                if(!state.voyageId)return;
-                const today=new Date().toISOString().split('T')[0];
-                const it=await db.getAllByIndex('itineraries','voyageId',state.voyageId);
-                const day=it.find(d=>d.date===today);
-                if(day){day.elegant=!day.elegant; await db.put('itineraries',day); showToast(`Elegant ${day.elegant?'ON':'OFF'}`);}
-            });
-        }
-
-        // ========== SCHEDULE ==========
-        async function getDayType(){
-            const override=document.getElementById('day-type-override').value;
-            if(override!=='auto')return override;
-            if(!state.voyageId)return'casual';
-            const v=await db.get('voyages',state.voyageId); if(!v)return'casual';
-            const today=new Date().toISOString().split('T')[0];
-            const it=await db.getAllByIndex('itineraries','voyageId',v.voyageId);
-            if(!it.length)return'casual';
-            if(today===it[it.length-1].date)return'debark';
-            const td=it.find(d=>d.date===today);
-            return(td&&td.elegant)?'elegant':'casual';
-        }
-        async function renderScheduleView(){
-            const dt=await getDayType();
-            const debarkContainer=document.getElementById('debark-engine-container');
-            const normal=document.getElementById('normal-schedule-container');
-            if(dt==='debark'){
-                debarkContainer.classList.remove('hidden'); normal.classList.add('hidden');
-                await renderDebarkUI();
-            }else{
-                debarkContainer.classList.add('hidden'); normal.classList.remove('hidden');
-                document.getElementById('schedule-grid').innerHTML='<div class="text-sm text-muted">Add shifts.</div>';
-            }
-        }
-        // Normal schedule builder (add shift, auto-breaks, save, export) – full implementation inline
-        document.getElementById('btn-add-shift').addEventListener('click',async()=>{
-            const grid=document.getElementById('schedule-grid');
-            const crew=await db.getAllByIndex('roster','status','active');
-            const options=crew.map(c=>`<option value="${c.id}">${c.name} (${c.role})</option>`).join('');
-            const row=document.createElement('div'); row.className='schedule-row card flex-between';
-            row.innerHTML=`<select class="sched-crew input" style="width:50%">${options}</select><input type="time" class="sched-start input" style="width:30%" value="17:00"><input type="text" class="sched-loc input" style="width:30%" placeholder="Loc"><button class="btn-remove btn" style="width:auto;padding:4px;background:var(--red);color:#fff">✕</button>`;
-            grid.appendChild(row);
-            row.querySelector('.btn-remove').addEventListener('click',()=>row.remove());
-        });
-        document.getElementById('btn-auto-breaks').addEventListener('click',async()=>{
-            const rows=document.querySelectorAll('.schedule-row');
-            if(!rows.length)return showToast('Add shifts first.');
-            const dt=await getDayType();
-            // simple break assignment
-            const breakSlots=[]; for(let h=17;h<=21;h++)for(let m=0;m<60;m+=30){if(h===17&&m<30)continue; if(h===21&&m>0)continue; breakSlots.push(`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`);}
-            const breakCounts={};
-            rows.forEach(row=>{
-                const start=row.querySelector('.sched-start').value;
-                let needed=0;
-                if(dt==='elegant') needed=1;
-                else if(start==='17:00') needed=1;
-                else if(start==='16:00') needed=2;
-                const breaks=[];
-                for(const slot of breakSlots){
-                    if(breaks.length>=needed)break;
-                    if((breakCounts[slot]||0)>=2)continue;
-                    breaks.push(slot); breakCounts[slot]=(breakCounts[slot]||0)+1;
-                }
-                row.dataset.breaks=JSON.stringify(breaks);
-            });
-            showToast('Auto-breaks assigned.');
-        });
-        document.getElementById('btn-save-schedule').addEventListener('click',async()=>{
-            const today=new Date().toISOString().split('T')[0];
-            const rows=document.querySelectorAll('.schedule-row');
-            const shifts=[];
-            for(const row of rows){
-                const crewId=parseInt(row.querySelector('.sched-crew').value);
-                if(!crewId)continue;
-                const crew=await db.get('roster',crewId);
-                shifts.push({
-                    crewId,
-                    crewName:crew?crew.name:'Unknown',
-                    time:row.querySelector('.sched-start')?.value||'',
-                    loc:row.querySelector('.sched-loc')?.value||'',
-                    breaks:JSON.parse(row.dataset.breaks||'[]'),
-                });
-            }
-            if(!shifts.length)return showToast('No shifts.');
-            const prev=await db.get('schedules',today);
-            if(prev)state.scheduleHistory.push(prev);
-            if(state.scheduleHistory.length>3)state.scheduleHistory.shift();
-            await db.put('schedules',{date:today,shifts});
-            showToast('Schedule locked.');
-            renderHome();
-        });
-        document.getElementById('btn-export-schedule-text').addEventListener('click',async()=>{
-            const rows=document.querySelectorAll('.schedule-row'); let text='';
-            for(const row of rows){
-                const crewId=parseInt(row.querySelector('.sched-crew').value);
-                if(!crewId)continue;
-                const crew=await db.get('roster',crewId);
-                text+=`${crew?crew.name:'Unknown'}: ${row.querySelector('.sched-start')?.value} @ ${row.querySelector('.sched-loc')?.value} | Breaks: ${JSON.parse(row.dataset.breaks||'[]').join(',')}\n`;
-            }
-            navigator.clipboard.writeText(text||'No schedule').then(()=>showToast('Copied'));
-        });
-
-        // ========== DEBARK ENGINE (full algorithm) ==========
-        async function renderDebarkUI(){
-            const container=document.getElementById('debark-engine-container');
-            const crew=await db.getAllByIndex('roster','status','active');
-            let html='<div class="card"><h3>Debark Night</h3><div id="debark-crew-list" class="flex-col gap-1 mt-2">';
-            crew.forEach(c=>{
-                html+=`<div class="flex-between"><span>${c.name}</span><select class="debark-role input" data-cid="${c.id}" style="width:120px"><option value="">Off</option><option value="g4">Gallery 4PM</option><option value="g530">Gallery 5:30PM</option><option value="back">Backdrop</option></select><label><input type="checkbox" class="debark-dining" data-cid="${c.id}">Dining</label></div>`;
-            });
-            html+='</div><button id="btn-debark-generate" class="btn btn-red mt-2">Generate</button><div id="debark-output" class="mt-2 hidden"></div></div>';
-            container.innerHTML=html;
-            document.getElementById('btn-debark-generate').addEventListener('click',generateDebark);
-        }
-async function generateDebark(){
-            const rows=document.querySelectorAll('.debark-role');
-            const assign=[]; rows.forEach(sel=>{const cid=parseInt(sel.dataset.cid); const role=sel.value; if(role){const dining=document.querySelector(`.debark-dining[data-cid="${cid}"]`).checked; assign.push({cid,role,dining});}});
-            if(!assign.length)return showToast('Assign roles.');
-            // resolve crew names
-            for(let a of assign){
-                const crew=await db.get('roster',a.cid);
-                a.name=crew?crew.name:'Unknown';
-            }
-            const result=debarkAlgorithm(assign,state.ops);
-            if(result.error){showToast(result.error);return;}
-            const out=document.getElementById('debark-output'); out.classList.remove('hidden');
-            out.innerHTML=`<h4>Pattern: ${result.pattern}min</h4>${result.schedule.map(c=>`<div class="card"><strong>${c.name}</strong><br>Breaks: ${c.breaks.map(b=>`${minToTime(b.start)}-${minToTime(b.end)}`).join(',')||'None'}<br>Copy: ${c.copySlots.map(s=>`${minToTime(s.start)}-${minToTime(s.end)}`).join(',')||'None'}</div>`).join('')}<button id="btn-accept-debark" class="btn btn-green mt-2">Accept & Save</button>`;
-            document.getElementById('btn-accept-debark').addEventListener('click',async()=>{
-                const today=new Date().toISOString().split('T')[0];
-                const shifts=result.schedule.map(c=>({crewId:c.id,crewName:c.name,breaks:c.breaks.map(b=>minToTime(b.start)),copySlots:c.copySlots.map(s=>({start:minToTime(s.start),end:minToTime(s.end)}))}));
-                await db.put('schedules',{date:today,shifts});
-                showToast('Debark schedule saved.'); renderHome();
-            });
-        }
-        function debarkAlgorithm(assign,ops){
-            const dinStart=timeToMin(ops.diningStart), dinEnd=timeToMin(ops.diningEnd);
-            const busyS=timeToMin(ops.copyBusyStart), busyE=timeToMin(ops.copyBusyEnd);
-            const crew=assign.map(a=>{
-                const c={id:a.cid,dining:a.dining,breaks:[],copySlots:[],name:''};
-                if(a.role==='g4'){c.startMin=16*60; c.breakCount=2;}
-                else if(a.role==='g530'){c.startMin=17*60+30; c.breakCount=1;}
-                else {c.startMin=17*60+30; c.breakCount=0;}
-                return c;
-            });
-            // assign breaks greedily
-            const slots=[]; for(let s=timeToMin('17:30');s<=timeToMin('21:00');s+=30)slots.push({start:s,end:s+30});
-            const bCount={};
-            crew.forEach(c=>{
-                let assigned=0;
-                for(const slot of slots){
-                    if(assigned>=c.breakCount)break;
-                    const key=minToTime(slot.start);
-                    if((bCount[key]||0)>=2)continue;
-                    if(c.dining&&slot.start<dinEnd&&slot.end>dinStart)continue;
-                    if(c.breaks.length&&slot.start-c.breaks[c.breaks.length-1].end<30)continue;
-                    c.breaks.push(slot); bCount[key]=(bCount[key]||0)+1; assigned++;
-                }
-            });
-            const eligible=crew.filter(c=>!c.dining&&c.breakCount>0);
-            const patterns=[30,60,90]; let bestP=null, bestScore=Infinity, bestAssign=null;
-            for(const pat of patterns){
-                const res=assignCopy(eligible,pat,busyS,busyE);
-                if(!res)continue;
-                const duties=res.map(c=>c.copySlots.length*pat);
-                const total=duties.reduce((a,b)=>a+b,0);
-                const mean=total/duties.length;
-                const variance=duties.reduce((a,b)=>a+Math.pow(b-mean,2),0)/duties.length;
-                const score=total+variance*2;
-                if(score<bestScore){bestScore=score; bestP=pat; bestAssign=res;}
-            }
-            if(!bestAssign)return{error:'Cannot cover copy side.'};
-            return{schedule:bestAssign,pattern:bestP};
-        }
-        function assignCopy(eligible,slotMin,busyS,busyE){
-            const overallS=timeToMin('17:30'), overallE=timeToMin('22:00');
-            const intervals=[]; for(let t=overallS;t<overallE;t+=5)intervals.push({start:t,req:(t>=busyS&&t<busyE)?2:1});
-            const cCopy=eligible.map(c=>({...c,copySlots:[]}));
-            for(let i=0;i<intervals.length;i+=slotMin/5){
-                const s=intervals[i].start, e=s+slotMin; if(e>overallE)break;
-                const need=intervals[i].req;
-                let assigned=0; for(const c of cCopy){if(c.copySlots.some(sl=>sl.start<=s&&sl.end>s))assigned++;}
-                const short=need-assigned; if(short<=0)continue;
-                const avail=cCopy.filter(c=>!c.copySlots.some(sl=>sl.start<e&&sl.end>s)&&!c.breaks.some(b=>b.start<e&&b.end>s));
-                if(avail.length<short)return null;
-                for(let k=0;k<short;k++)avail[k].copySlots.push({start:s,end:e});
-            }
-            return cCopy;
-        }
-
-        // ========== REPORT ==========
-        async function renderReportView(){
-            const select=document.getElementById('report-day-select');
-            if(!state.voyageId){select.innerHTML='';return;}
-            const it=await db.getAllByIndex('itineraries','voyageId',state.voyageId);
-            select.innerHTML=it.map(d=>`<option value="${d.date}">${d.date} (${d.port})</option>`).join('');
-            select.value=new Date().toISOString().split('T')[0];
-            select.addEventListener('change',renderReportDay);
-            renderReportDay();
-        }
-        async function renderReportDay(){
-            const date=document.getElementById('report-day-select').value;
-            const it=await db.getAllByIndex('itineraries','voyageId',state.voyageId);
-            const day=it.find(d=>d.date===date); if(!day)return;
-            const photographers=await db.getAllByIndex('roster','status','active');
-            const list=document.getElementById('report-photographer-list');
-            list.innerHTML=photographers.filter(p=>p.role!=='Manager'&&p.role!=='APM').map(p=>{
-                const cap=db.get('capture_counts',`${state.voyageId}_${date}_${p.id}`).then(c=>c||{});
-                return`<div class="card"><strong>${p.name} (#${p.photoNum||'?'})</strong>
-                <div class="flex-between"><span>Gangway/Deck</span><input type="number" class="report-input input" data-evt="gangway" data-pid="${p.id}" style="width:80px" min="0"></div>
-                <div class="flex-between"><span>Costumes</span><input type="number" class="report-input input" data-evt="costumes" data-pid="${p.id}" style="width:80px" min="0"></div>
-                <div class="flex-between"><span>Portrait</span><input type="number" class="report-input input" data-evt="portrait" data-pid="${p.id}" style="width:80px" min="0"></div>
-                <div class="flex-between"><span>Dining</span><input type="number" class="report-input input" data-evt="dining" data-pid="${p.id}" style="width:80px" min="0"></div>
-                </div>`;
-            }).join('');
-            // load existing counts
-            for(const p of photographers){
-                const cap=await db.get('capture_counts',`${state.voyageId}_${date}_${p.id}`);
-                if(cap){
-                    const inputs=document.querySelectorAll(`.report-input[data-pid="${p.id}"]`);
-                    inputs.forEach(inp=>{if(cap[inp.dataset.evt])inp.value=cap[inp.dataset.evt];});
-                }
-            }
-            // live total
-            const updateTotal=()=>{
-                let total=0;
-                document.querySelectorAll('.report-input').forEach(inp=>total+=parseInt(inp.value)||0);
-                document.getElementById('report-daily-total').innerText=total;
             };
-            document.querySelectorAll('.report-input').forEach(inp=>inp.addEventListener('input',updateTotal));
-            updateTotal();
-            // save on change
-            document.querySelectorAll('.report-input').forEach(inp=>inp.addEventListener('change',async()=>{
-                const pid=inp.dataset.pid, evt=inp.dataset.evt, val=parseInt(inp.value)||0;
-                const id=`${state.voyageId}_${date}_${pid}`;
-                let cap=await db.get('capture_counts',id)||{id,voyageId:state.voyageId,date,photographerId:pid};
-                cap[evt]=val;
-                await db.put('capture_counts',cap);
-            }));
-            // sales log button (if voyage completed)
-            const v=await db.get('voyages',state.voyageId);
-            if(v&&v.status==='completed') document.getElementById('btn-log-sales').classList.remove('hidden');
-            else document.getElementById('btn-log-sales').classList.add('hidden');
-        }
-        document.getElementById('btn-log-sales').addEventListener('click',async()=>{
-            // simple sales entry loop
-            const v=await db.get('voyages',state.voyageId);
-            if(!v||v.status!=='completed')return;
-            const captures=await db.getAllByIndex('capture_counts','voyageId',state.voyageId);
-            const photographers=await db.getAllByIndex('roster','status','active');
-            // build a modal (simplified: just prompt)
-            let salesHtml='<div class="card"><h3>Enter Sold Counts</h3>';
-            for(const cap of captures){
-                const p=photographers.find(p=>p.id===cap.photographerId);
-                if(!p)continue;
-                Object.keys(cap).filter(k=>!['id','voyageId','date','photographerId'].includes(k)&&cap[k]>0).forEach(evt=>{
-                    salesHtml+=`<div class="flex-between"><span>${p.name} - ${cap.date} - ${evt} (Taken:${cap[evt]})</span><input type="number" class="sold-input input" data-pid="${p.id}" data-date="${cap.date}" data-evt="${evt}" style="width:80px" min="0"></div>`;
-                });
-            }
-            salesHtml+='<button id="btn-save-sales" class="btn btn-green mt-2">Save Sales</button></div>';
-            // show in a modal (create div)
-            const modal=document.createElement('div'); modal.style.cssText='position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:1000;display:flex;align-items:center;justify-content:center';
-            modal.innerHTML=salesHtml;
-            document.body.appendChild(modal);
-            modal.querySelector('#btn-save-sales').addEventListener('click',async()=>{
-                const soldInputs=modal.querySelectorAll('.sold-input');
-                for(const inp of soldInputs){
-                    const pid=inp.dataset.pid, date=inp.dataset.date, evt=inp.dataset.evt, sold=parseInt(inp.value)||0;
-                    const id=`${state.voyageId}_${date}_${pid}_${evt}`;
-                    await db.put('sales',{id,voyageId:state.voyageId,photographerId:pid,date,event:evt,sold});
+            
+            r1.addEventListener('input', calculatePace);
+            r2.addEventListener('input', calculatePace);
+        });
+    }
+
+/* === END OF CHUNK 7: SETUP & ROUNDS CONTROLLERS. APPEND CHUNK 8 BELOW === */
+    /* === 13. UI CONTROLLER: END OF DAY (PRODUCTIVITY & SUMMARY) === */
+    const shipRevInput = document.getElementById('input-ship-rev');
+    const dsRevInput = document.getElementById('input-ds-rev');
+    const voyageGcdDisplay = document.getElementById('ui-voyage-gcd');
+    const shipRevDisplay = document.getElementById('ui-ship-rev');
+
+    /**
+     * Dynamically builds the EOD capture count screen.
+     * Triggered automatically when "Lock Schedule" is pressed in Chunk 7.
+     */
+    function populateEODInputs(assignments) {
+        const container = document.getElementById('eod-capture-inputs');
+        container.innerHTML = '';
+        
+        if (assignments.length === 0) return;
+
+        assignments.forEach(crew => {
+            const row = document.createElement('div');
+            row.className = 'input-row';
+            
+            // Clean up the role name for display (e.g., "portrait_500" -> "Portrait 500")
+            const displayRole = crew.role.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+
+            row.innerHTML = `
+                <label>${crew.name} <br><span style="font-size:11px; color:var(--text-muted)">${displayRole}</span></label>
+                <input type="number" inputmode="numeric" class="eod-input-val" data-name="${crew.name}" data-role="${crew.role}" placeholder="0">
+            `;
+            container.appendChild(row);
+        });
+
+        // Add "Enter" key behavior to move to the next input (desktop/tablet helper)
+        const inputs = document.querySelectorAll('.eod-input-val');
+        inputs.forEach((input, index) => {
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (index + 1 < inputs.length) inputs[index + 1].focus();
                 }
-                document.body.removeChild(modal);
-                showToast('Sales logged.');
             });
         });
+    }
 
-        // ========== INVENTORY ==========
-        document.getElementById('btn-save-inventory').addEventListener('click',async()=>{
-            const name=document.getElementById('inv-name').value.trim();
-            const cat=document.getElementById('inv-category').value;
-            const stock=parseInt(document.getElementById('inv-stock').value);
-            const par=parseInt(document.getElementById('inv-par').value)||null;
-            if(!name||isNaN(stock))return showToast('Name & stock required.');
-            await db.put('inventory',{name,category:cat,stock,par,lastUpdated:new Date().toISOString()});
-            document.getElementById('inv-name').value=''; document.getElementById('inv-stock').value=''; document.getElementById('inv-par').value='';
-            renderInventoryView();
-        });
-        async function renderInventoryView(){
-            const items=await db.getAll('inventory');
-            const list=document.getElementById('inventory-list');
-            list.innerHTML=items.map(i=>`<div class="flex-between"><span>${i.name} (${i.category})</span><span>${i.stock}/${i.par||'?'}</span></div>`).join('');
-        }
+    /**
+     * Calculates Live GCD and updates the sticky Dashboard banner.
+     */
+    function updateLiveRevenue() {
+        let shipRev = parseFloat(shipRevInput.value) || 0;
+        let dsRev = parseFloat(dsRevInput.value) || 0;
+        let totalRev = shipRev + dsRev;
+        
+        // Update Dashboard Revenue Tracker
+        shipRevDisplay.textContent = `$${totalRev.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
 
-        // ========== SETTINGS (contract, voyages, etc.) ==========
-        document.getElementById('btn-save-contract').addEventListener('click',async()=>{
-            const ship=document.getElementById('cfg-ship-name').value.trim(), abbr=document.getElementById('cfg-ship-abbr').value.trim().toUpperCase();
-            const mode=document.getElementById('cfg-op-mode').value, signOn=document.getElementById('cfg-sign-on').value, signOff=document.getElementById('cfg-sign-off').value;
-            if(!ship||!signOn||!signOff)return showToast('Fill all.');
-            await db.put('contracts',{id:'CT_MAIN',shipName:ship,abbr,mode,signOn,signOff,status:'active'});
-            state.contractId='CT_MAIN'; state.mode=mode; state.abbr=abbr;
-            document.getElementById('header-voyage-id').innerText=`${ship} - ${mode}`;
-            showToast('Contract saved.');
-        });
-        document.getElementById('btn-ingest-json').addEventListener('click',async()=>{
-            const raw=document.getElementById('cfg-json-input').value.trim();
-            if(!raw)return showToast('Paste JSON.');
-            try{
-                const arr=JSON.parse(raw);
-                for(const v of arr){
-                    const monthId=v.endDate.substring(0,7);
-                    const len=v.itinerary.length;
-                    const elegantNights=len<=5?[1]:[1,len-2];
-                    for(let i=0;i<len;i++){
-                        await db.put('itineraries',{id:`${v.voyageId}_${v.itinerary[i].date}`,voyageId:v.voyageId,date:v.itinerary[i].date,port:v.itinerary[i].port,elegant:elegantNights.includes(i)});
-                    }
-                    await db.put('voyages',{voyageId:v.voyageId,contractId:state.contractId,startDate:v.startDate,endDate:v.endDate,length:len,monthId,status:'pending',guests:null,targetGcd:null,pryrGcd:null});
-                }
-                document.getElementById('cfg-json-input').value='';
-                showToast(`Ingested ${arr.length} voyages.`);
-                renderPendingVoyages();
-            }catch{showToast('Invalid JSON.');}
-        });
-        async function renderPendingVoyages(){
-            const list=document.getElementById('pending-voyages-list');
-            const pending=await db.getAllByIndex('voyages','status','pending');
-            list.innerHTML=pending.length?pending.map(v=>`<div class="flex-between"><span>${v.voyageId} (${v.startDate} - ${v.endDate})</span><button class="btn btn-outline btn-activate" data-vid="${v.voyageId}">Activate</button></div>`).join(''):'None';
-            document.querySelectorAll('.btn-activate').forEach(b=>b.addEventListener('click',e=>triggerActivation(e.target.dataset.vid)));
+        // Fallback to 3000 guests & $4.50 target if DB hasn't loaded a voyage yet
+        let guestCount = (AppState.currentVoyage && AppState.currentVoyage.guestCount) ? AppState.currentVoyage.guestCount : 3000;
+        let targetGcd = (AppState.currentVoyage && AppState.currentVoyage.voyageGcdTarget) ? AppState.currentVoyage.voyageGcdTarget : 4.50;
+        
+        let currentGcd = totalRev / guestCount;
+        
+        voyageGcdDisplay.textContent = `${currentGcd.toFixed(2)} / ${targetGcd.toFixed(2)}`;
+        
+        // Dynamic Pacing Colors
+        if (currentGcd >= targetGcd) {
+            voyageGcdDisplay.className = 'status-indicator status-green';
+        } else if (currentGcd >= targetGcd * 0.85) {
+            voyageGcdDisplay.className = 'status-indicator status-yellow';
+        } else {
+            voyageGcdDisplay.className = 'status-indicator status-red';
         }
-        let pendingActVid=null;
-        function triggerActivation(vid){
-            pendingActVid=vid;
-            document.getElementById('act-voyage-title').innerText=vid;
-            db.get('voyages',vid).then(v=>{
-                db.get('months',v.monthId).then(m=>{
-                    const wrap=document.getElementById('act-monthly-wrapper');
-                    if(m)wrap.classList.add('hidden'); else wrap.classList.remove('hidden');
-                    document.getElementById('modal-activate-voyage').classList.remove('hidden');
-                });
+    }
+
+    shipRevInput.addEventListener('input', updateLiveRevenue);
+    dsRevInput.addEventListener('input', updateLiveRevenue);
+
+    /**
+     * The Master Export: Formats all data and copies to iOS Clipboard.
+     */
+    document.getElementById('btn-generate-summary').addEventListener('click', async () => {
+        let shipRev = parseFloat(shipRevInput.value) || 0;
+        let dsRev = parseFloat(dsRevInput.value) || 0;
+        let totalRev = shipRev + dsRev;
+        
+        let guestCount = (AppState.currentVoyage && AppState.currentVoyage.guestCount) ? AppState.currentVoyage.guestCount : 3000;
+        let currentGcd = (totalRev / guestCount).toFixed(2);
+        
+        let scratchpad = document.getElementById('ui-scratchpad').value;
+        let isElegant = document.getElementById('toggle-elegant').checked ? "Elegant Night" : "Casual Night";
+
+        let summary = `🚢 EVENING MANAGER SUMMARY - ${isElegant} 🚢\n\n`;
+        summary += `💰 Total Revenue: $${totalRev.toFixed(2)}\n`;
+        summary += `📊 Daily GCD: ${currentGcd}\n\n`;
+        summary += `📸 CAPTURE COUNTS:\n`;
+        
+        const inputs = document.querySelectorAll('.eod-input-val');
+        if (inputs.length === 0) {
+            summary += `(No roster locked for tonight)\n`;
+        } else {
+            inputs.forEach(input => {
+                let val = input.value || 0;
+                summary += `- ${input.dataset.name}: ${val}\n`;
             });
         }
-        document.getElementById('btn-cancel-activation').addEventListener('click',()=>{document.getElementById('modal-activate-voyage').classList.add('hidden');pendingActVid=null;});
-        document.getElementById('btn-confirm-activation').addEventListener('click',async()=>{
-            if(!pendingActVid)return;
-            const v=await db.get('voyages',pendingActVid);
-            const guests=parseInt(document.getElementById('act-guests').value), target=parseFloat(document.getElementById('act-target-gcd').value), pryr=parseFloat(document.getElementById('act-pryr-gcd').value)||null;
-            if(isNaN(guests)||isNaN(target))return showToast('Guests & target required.');
-            const wrap=document.getElementById('act-monthly-wrapper');
-            if(!wrap.classList.contains('hidden')){
-                const mt=parseFloat(document.getElementById('act-monthly-target').value), mp=parseFloat(document.getElementById('act-monthly-pryr').value)||null;
-                if(isNaN(mt))return showToast('Monthly target required.');
-                await db.put('months',{id:v.monthId,targetGcd:mt,pryrGcd:mp});
+        
+        if (scratchpad.trim() !== '') {
+            summary += `\n📝 NOTES & REQUESTS:\n${scratchpad}`;
+        }
+
+        try {
+            // Write to native iOS clipboard
+            await navigator.clipboard.writeText(summary);
+            
+            // Visual feedback on the button
+            const btn = document.getElementById('btn-generate-summary');
+            const originalText = btn.textContent;
+            btn.textContent = "✅ Copied to Clipboard!";
+            btn.style.backgroundColor = "var(--success)";
+            setTimeout(() => {
+                btn.textContent = originalText;
+                btn.style.backgroundColor = "var(--primary)";
+            }, 3000);
+            
+        } catch (err) {
+            console.error('Clipboard API failed', err);
+            alert("Clipboard permission denied or unavailable. Please manually copy the data.");
+        }
+    });
+
+
+    /* === 14. UI CONTROLLER: ANALYTICS & INVENTORY (MOCK BINDINGS) === */
+    // Demonstrates triggering the efficiency math engine (Chunk 6)
+    document.getElementById('btn-run-efficiency').addEventListener('click', () => {
+        // In a live environment, this pulls capture/sales arrays from IndexedDB.
+        // Mock data to demonstrate the algorithm ghosting and sorting:
+        const mockCapture = [
+            { crewId: "crew_1", name: "John", category: "ProPortraits", takenCount: 200 },
+            { crewId: "crew_1", name: "John", category: "Funshots", takenCount: 0 }, // Ghosted
+            { crewId: "crew_2", name: "Sarah", category: "ProPortraits", takenCount: 150 }
+        ];
+        const mockSales = [
+            { crewId: "crew_1", category: "ProPortraits", soldCount: 40 },
+            { crewId: "crew_2", category: "ProPortraits", soldCount: 45 }
+        ];
+
+        const leaderboard = generateEfficiencyLeaderboard(mockCapture, mockSales);
+        
+        const out = document.getElementById('leaderboard-output');
+        out.innerHTML = `<p style="color:var(--success); font-weight:bold;">Leaderboard Generated! (Check Console for Output Array)</p>`;
+        console.log("Calculated Leaderboard:", leaderboard);
+    });
+
+    /**
+     * Basic UI rendering for Inventory Par Levels.
+     */
+    function renderInventoryParAlerts() {
+        const externalList = document.getElementById('inventory-external-list');
+        // Example logic: if current stock < par, show alert.
+        // Data would come from IndexedDB 'inventory' store.
+        externalList.innerHTML = `
+            <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--border);">
+                <span>8x10 Glossy Paper</span> <span style="color:var(--danger); font-weight:bold;">Stock: 2 (Par: 5)</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; padding:8px 0;">
+                <span>Chemistry Carts</span> <span style="color:var(--danger); font-weight:bold;">Stock: 1 (Par: 3)</span>
+            </div>
+        `;
+        
+        document.getElementById('inventory-internal-list').innerHTML = `
+            <div style="padding:8px 0;">✅ Backdrop batteries charged</div>
+            <div style="padding:8px 0;">✅ 2 boxes of folio covers requested from provision</div>
+        `;
+    }
+
+
+    /* === 15. SYSTEM BOOT SEQUENCE === */
+    document.addEventListener('DOMContentLoaded', async () => {
+        try {
+            // 1. Open IndexedDB Database
+            await openDatabase();
+            console.log("✅ Offline Database initialized.");
+            
+            // 2. Load App State (In real usage, fetch active contract/voyage from DB)
+            // For now, we seed a default roster to make the UI work instantly on boot
+            AppState.roster = [
+                { scheduleNumber: 1, name: "Manager (You)" },
+                { scheduleNumber: 2, name: "Assistant Mgr" },
+                { scheduleNumber: 3, name: "Senior Photo" },
+                { scheduleNumber: 4, name: "Photographer A" },
+                { scheduleNumber: 5, name: "Photographer B" },
+                { scheduleNumber: 6, name: "Photographer C" },
+                { scheduleNumber: 7, name: "Lab Tech" }
+            ];
+
+            // 3. Initialize default UI states
+            updateLiveRevenue();
+            renderInventoryParAlerts();
+            
+            // Vacation Mode Check (If no active contract is found in DB)
+            if (AppState.vacationMode) {
+                document.getElementById('vacation-warning').style.display = 'block';
+                document.getElementById('setup-controls').style.opacity = '0.5';
+                document.getElementById('setup-controls').style.pointerEvents = 'none';
             }
-            const active=await db.getAllByIndex('voyages','status','active');
-            for(const av of active){av.status='completed';await db.put('voyages',av);}
-            v.guests=guests; v.targetGcd=target; v.pryrGcd=pryr; v.status='active';
-            await db.put('voyages',v);
-            state.voyageId=v.voyageId;
-            document.getElementById('modal-activate-voyage').classList.add('hidden');
-            document.getElementById('view-settings').classList.add('hidden');
-            showToast(`Voyage ${v.voyageId} live.`);
-            renderHome();
-        });
-        document.getElementById('btn-save-ops').addEventListener('click',()=>{
-            state.ops.diningStart=document.getElementById('cfg-dining-start').value;
-            state.ops.diningEnd=document.getElementById('cfg-dining-end').value;
-            state.ops.copyBusyStart=document.getElementById('cfg-copy-busy-start').value;
-            state.ops.copyBusyEnd=document.getElementById('cfg-copy-busy-end').value;
-            showToast('Times saved.');
-        });
-        // Gallery hardware, backup, update, reset (abbreviated but full)
-        document.getElementById('btn-save-panel').addEventListener('click',async()=>{
-            const panel=document.getElementById('cfg-panel-selector').value;
-            const count=parseInt(document.getElementById('cfg-panel-count').value), lines=parseInt(document.getElementById('cfg-panel-lines').value);
-            const caps={'8x10':parseInt(document.getElementById('cfg-cap-8x10').value)||0,'6x9h':parseInt(document.getElementById('cfg-cap-6x9h').value)||0,'6x9v':parseInt(document.getElementById('cfg-cap-6x9v').value)||0,'5x7h':parseInt(document.getElementById('cfg-cap-5x7h').value)||0,'5x7v':parseInt(document.getElementById('cfg-cap-5x7v').value)||0};
-            if(isNaN(count)||isNaN(lines))return showToast('Count & lines required.');
-            await db.put('gallery_config',{panelType:panel,totalPanels:count,linesPerPanel:lines,capacities:caps});
-            showToast('Panel saved.');
-        });
-        document.getElementById('btn-export-backup').addEventListener('click',async()=>{
-            const dump={contracts:await db.getAll('contracts'),months:await db.getAll('months'),voyages:await db.getAll('voyages'),itineraries:await db.getAll('itineraries'),roster:await db.getAll('roster'),schedules:await db.getAll('schedules'),gallery_config:await db.getAll('gallery_config'),daily_revenue:await db.getAll('daily_revenue'),inventory:await db.getAll('inventory'),capture_counts:await db.getAll('capture_counts'),sales:await db.getAll('sales')};
-            const blob=new Blob([JSON.stringify(dump)],{type:'application/json'});
-            const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='APM_backup.json'; a.click();
-        });
-        document.getElementById('input-restore-backup').addEventListener('change',async(e)=>{
-            const file=e.target.files[0]; if(!file)return;
-            const reader=new FileReader();
-            reader.onload=async(ev)=>{
-                try{
-                    const data=JSON.parse(ev.target.result);
-                    if(!confirm('Overwrite all data?'))return;
-                    const stores=['contracts','months','voyages','itineraries','roster','schedules','gallery_config','daily_revenue','inventory','capture_counts','sales'];
-                    for(const s of stores){await db.clearStore(s); if(data[s]) for(const r of data[s]) await db.put(s,r);}
-                    showToast('Restored. Reloading...'); setTimeout(()=>window.location.reload(),1000);
-                }catch{showToast('Invalid backup.');}
-            };
-            reader.readAsText(file);
-        });
-        document.getElementById('btn-execute-reset').addEventListener('click',async()=>{
-            if(!confirm('PERMANENTLY DELETE ALL DATA?'))return;
-            const stores=['contracts','months','voyages','itineraries','roster','schedules','gallery_config','daily_revenue','inventory','capture_counts','sales'];
-            for(const s of stores)await db.clearStore(s);
-            showToast('Wiped.'); setTimeout(()=>window.location.reload(),500);
-        });
-        document.getElementById('btn-update-app').addEventListener('click',async()=>{
-            if(navigator.serviceWorker){const regs=await navigator.serviceWorker.getRegistrations(); for(let r of regs)await r.unregister();}
-            caches.keys().then(keys=>keys.forEach(k=>caches.delete(k)));
-            showToast('Updating...'); setTimeout(()=>window.location.reload(true),500);
-        });
 
-        // Crew management (modal)
-        document.getElementById('btn-show-add-crew')?.addEventListener('click',()=>{ /* if button exists */ });
-        // (In the schedule view we might need a crew roster; for brevity crew management is available via a small link in settings or schedule - we can add a simple list)
-        // But for completeness, I'll add a quick roster list in schedule tab as a collapsible card.
-        // Actually we omitted the full crew UI; but we can include a minimal version in schedule: a button "Manage Crew" that shows the modal.
-        // For now, crew management can be done through the console or we add a button. I'll insert a "Crew" button in schedule.
-        // Since this is already long, we'll provide a simple inline roster editor in schedule.
-        // I'll add a small section in schedule view.
-        const scheduleCard=document.querySelector('#view-schedule .card');
-        if(scheduleCard){
-            const crewBtn=document.createElement('button');
-            crewBtn.className='btn btn-outline mt-2';
-            crewBtn.innerText='👥 Manage Crew';
-            crewBtn.addEventListener('click',async()=>{
-                const crew=await db.getAllByIndex('roster','status','active');
-                let list='<div class="card"><h3>Crew</h3>';
-                crew.forEach(c=>{list+=`<div class="flex-between"><span>${c.name} (${c.role}) #${c.photoNum||'?'}</span><button class="btn btn-outline edit-crew" data-cid="${c.id}">Edit</button></div>`});
-                list+='<button id="btn-add-crew-modal" class="btn btn-blue mt-2">+ Add Crew</button></div>';
-                const modal=document.createElement('div'); modal.style.cssText='position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:1000;display:flex;align-items:center;justify-content:center';
-                modal.innerHTML=list;
-                document.body.appendChild(modal);
-                modal.querySelector('#btn-add-crew-modal').addEventListener('click',()=>{
-                    resetCrewForm(); document.getElementById('modal-crew-profile').classList.remove('hidden');
-                });
-                modal.querySelectorAll('.edit-crew').forEach(b=>b.addEventListener('click',async()=>{
-                    const c=await db.get('roster',parseInt(b.dataset.cid));
-                    if(c){document.getElementById('crew-id').value=c.id; document.getElementById('crew-name').value=c.name; document.getElementById('crew-role').value=c.role; document.getElementById('crew-cabin').value=c.cabin||''; document.getElementById('crew-sign-on').value=c.signOn||''; document.getElementById('crew-sign-off').value=c.signOff||''; document.getElementById('crew-photo-num').value=c.photoNum||''; document.getElementById('modal-crew-title').innerText='Edit Crew'; document.getElementById('btn-archive-crew').classList.remove('hidden'); document.getElementById('modal-crew-profile').classList.remove('hidden');}
-                }));
-                modal.addEventListener('click',e=>{if(e.target===modal)document.body.removeChild(modal)});
-            });
-            scheduleCard.appendChild(crewBtn);
+            console.log("🚢 ShipPhoto OS Boot Sequence Complete.");
+        } catch (error) {
+            console.error("❌ Failed to boot ShipPhoto OS:", error);
         }
-        function resetCrewForm(){
-            document.getElementById('crew-id').value=''; document.getElementById('crew-name').value=''; document.getElementById('crew-role').value='Photographer';
-            document.getElementById('crew-cabin').value=''; document.getElementById('crew-sign-on').value=''; document.getElementById('crew-sign-off').value=''; document.getElementById('crew-photo-num').value='';
-            document.getElementById('modal-crew-title').innerText='Add Crew'; document.getElementById('btn-archive-crew').classList.add('hidden');
-        }
-        document.getElementById('btn-save-crew').addEventListener('click',async()=>{
-            const name=document.getElementById('crew-name').value.trim();
-            if(!name)return showToast('Name required.');
-            const data={name,role:document.getElementById('crew-role').value,cabin:document.getElementById('crew-cabin').value,signOn:document.getElementById('crew-sign-on').value,signOff:document.getElementById('crew-sign-off').value,photoNum:parseInt(document.getElementById('crew-photo-num').value)||null,status:'active'};
-            const id=document.getElementById('crew-id').value;
-            if(id)data.id=parseInt(id);
-            await db.put('roster',data);
-            document.getElementById('modal-crew-profile').classList.add('hidden');
-            showToast('Crew saved.');
-        });
-        document.getElementById('btn-cancel-crew').addEventListener('click',()=>document.getElementById('modal-crew-profile').classList.add('hidden'));
-        document.getElementById('btn-archive-crew').addEventListener('click',async()=>{
-            const id=parseInt(document.getElementById('crew-id').value);
-            if(confirm('Archive?')){const c=await db.get('roster',id); c.status='archived'; await db.put('roster',c); document.getElementById('modal-crew-profile').classList.add('hidden'); showToast('Archived.');}
-        });
-    </script>
+    });
+
+</script>
 </body>
 </html>
