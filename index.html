@@ -1444,34 +1444,38 @@
         alert("Roster saved successfully! The Speed Grid has been updated.");
     });
 
-    /* === 15. SYSTEM BOOT SEQUENCE === */
+/* === 15. SYSTEM BOOT SEQUENCE === */
     document.addEventListener('DOMContentLoaded', async () => {
         try {
             // 1. Open IndexedDB Database
             await openDatabase();
             console.log("✅ Offline Database initialized.");
             
-            // 2. Load App State (In real usage, fetch active contract/voyage from DB)
-            // For now, we seed a default roster to make the UI work instantly on boot
-            AppState.roster = [
-                { scheduleNumber: 1, name: "Manager (You)" },
-                { scheduleNumber: 2, name: "Assistant Mgr" },
-                { scheduleNumber: 3, name: "Senior Photo" },
-                { scheduleNumber: 4, name: "Photographer A" },
-                { scheduleNumber: 5, name: "Photographer B" },
-                { scheduleNumber: 6, name: "Photographer C" },
-                { scheduleNumber: 7, name: "Lab Tech" }
-            ];
+            // 2. Load Real Crew Roster from the Database!
+            const savedCrew = await dbGetAll('crew');
+            if (savedCrew && savedCrew.length > 0) {
+                AppState.roster = savedCrew;
+            } else {
+                AppState.roster = []; // Leaves it blank if no data exists
+            }
+
+            // Re-render the Speed Grid to display the real names
+            if (typeof renderSpeedGrid === 'function') {
+                renderSpeedGrid(20);
+            }
 
             // 3. Initialize default UI states
-            updateLiveRevenue();
-            renderInventoryParAlerts();
+            if (typeof updateLiveRevenue === 'function') updateLiveRevenue();
+            if (typeof renderInventoryParAlerts === 'function') renderInventoryParAlerts();
             
-            // Vacation Mode Check (If no active contract is found in DB)
+            // Vacation Mode Check
             if (AppState.vacationMode) {
                 document.getElementById('vacation-warning').style.display = 'block';
-                document.getElementById('setup-controls').style.opacity = '0.5';
-                document.getElementById('setup-controls').style.pointerEvents = 'none';
+                const setupControls = document.getElementById('setup-controls');
+                if(setupControls) {
+                    setupControls.style.opacity = '0.5';
+                    setupControls.style.pointerEvents = 'none';
+                }
             }
 
             console.log("🚢 ShipPhoto OS Boot Sequence Complete.");
