@@ -252,14 +252,15 @@
             font-size: 12px;
             font-weight: bold;
         }
-                /* === 7. SPEED GRID ROLE COLORS === */
-        .role-p500 { background-color: #3498db !important; color: #FFF !important; } /* Blue */
-        .role-p530 { background-color: #2c3e50 !important; color: #FFF !important; } /* Dark Navy */
-        .role-dr   { background-color: #e74c3c !important; color: #FFF !important; } /* Red */
-        .role-g400 { background-color: #f1c40f !important; color: #000 !important; } /* Yellow */
-        .role-g530 { background-color: #e67e22 !important; color: #FFF !important; } /* Orange */
-        .role-al   { background-color: #9b59b6 !important; color: #FFF !important; } /* Purple */
-        .role-ps   { background-color: #1abc9c !important; color: #FFF !important; } /* Teal */
+        /* === 7. SPEED GRID ROLE COLORS === */
+        .role-p500 { background-color: #3498db !important; color: #FFF !important; } 
+        .role-p530 { background-color: #2c3e50 !important; color: #FFF !important; } 
+        .role-drg4 { background: linear-gradient(135deg, #e74c3c 50%, #f1c40f 50%) !important; color: #000 !important; }
+        .role-drg5 { background: linear-gradient(135deg, #e74c3c 50%, #e67e22 50%) !important; color: #FFF !important; }
+        .role-g400 { background-color: #f1c40f !important; color: #000 !important; } 
+        .role-g530 { background-color: #e67e22 !important; color: #FFF !important; } 
+        .role-al   { background-color: #9b59b6 !important; color: #FFF !important; } 
+        .role-ps   { background-color: #1abc9c !important; color: #FFF !important; } 
         
         .role-label { 
             display: block; 
@@ -268,6 +269,7 @@
             margin-top: 4px;
             opacity: 0.9;
         }
+
 
     </style>
 </head>
@@ -306,7 +308,6 @@
             No active contract. App is in Read-Only archive mode.
         </div>
 
-        <!-- Replace the old Elegant Night Checkbox on the Dashboard with this: -->
         <div class="card">
             <div class="card-title">Voyage Timeline</div>
             <div class="input-row" style="border: none;">
@@ -323,6 +324,7 @@
         </div>
 
 
+
         <div class="card">
             <div class="card-title">Manager Scratchpad</div>
             <textarea id="ui-scratchpad" rows="4" placeholder="Jot down cabin requests, print orders, or complaints here..."></textarea>
@@ -337,12 +339,14 @@
                 <option value="" disabled selected>1. Select Duty...</option>
                 <option value="portrait_500">5:00 PM Portrait</option>
                 <option value="portrait_530">5:30 PM Portrait</option>
-                <option value="dining_room">Dining Room</option>
-                <option value="gallery_400">Gallery 4:00 PM</option>
-                <option value="gallery_530">Gallery 5:30 PM</option>
+                <option value="dr_gallery_400">DR + Gallery (4:00 PM Start)</option>
+                <option value="dr_gallery_530">DR + Gallery (5:30 PM Start)</option>
+                <option value="gallery_400">Pure Gallery (4:00 PM Start)</option>
+                <option value="gallery_530">Pure Gallery (5:30 PM Start)</option>
                 <option value="assistant_lab">Assistant Lab Tech</option>
                 <option value="print_shop">Print Shop Specialist</option>
             </select>
+
 
             <div style="margin-bottom: 10px; font-weight: bold; color: var(--primary);">2. Tap Team Numbers:</div>
             
@@ -760,204 +764,147 @@
 
 
     /* === 7. LOGIC ENGINE: SMART BREAK CASCADE === */
-    /**
-     * Calculates the entire evening shift matrix based on the assigned roles.
-     * Rules applied:
-     * - 5:30 PM Portrait shooters get ZERO breaks.
-     * - Dining Room (DR) team cascades to relieve 5:00 PM shooters.
-     * - Elegant Night = 20 min breaks. Casual Night = 30 min breaks.
-     * - Assistant Lab Tech acts as overflow coverage if the DR team isn't large enough.
-     * 
-     * @param {Array} rosterAssignments - Array of objects: { scheduleNumber, role, name }
-     * @param {boolean} isElegantNight - Boolean driving the break duration
-     * @returns {Array} timeline - Ordered list of breaks and shifts
-     */
-    function calculateBreakCascade(rosterAssignments, isElegantNight) {
+    function calculateBreakCascade(rosterAssignments, currentDay) {
         let timeline = [];
+        const isElegantNight = (currentDay === 'elegant');
+        const isDebarkNight = (currentDay === 'debark');
         const breakDuration = isElegantNight ? 20 : 30;
         
-        // 1. Categorize the assigned team
         let drTeam = [];
         let portrait500 = [];
         let portrait530 = [];
+        let pureGallery = [];
         let assistantLab = null;
-        let printShop = null;
 
         rosterAssignments.forEach(crew => {
-            if (crew.role === 'dining_room') drTeam.push(crew);
+            if (crew.role.includes('dr_gallery')) drTeam.push(crew); 
             else if (crew.role === 'portrait_500') portrait500.push(crew);
             else if (crew.role === 'portrait_530') portrait530.push(crew);
+            else if (crew.role.includes('gallery_')) pureGallery.push(crew);
             else if (crew.role === 'assistant_lab') assistantLab = crew;
-            else if (crew.role === 'print_shop') printShop = crew;
         });
 
-        // Rule: 5:30 PM Shooters get zero breaks. Just log their shift.
+        // 5:30 PM Shooters get zero breaks.
         portrait530.forEach(crew => {
-            timeline.push({
-                crew: crew.name,
-                type: 'Continuous Shift',
-                time: '17:30 - Close',
-                notes: 'No break required (5:30 PM start).'
-            });
+            timeline.push({ crew: crew.name, type: 'Continuous Shift', time: '17:30 - Close', notes: 'No break required (5:30 PM start).' });
         });
 
-        if (portrait500.length === 0) {
-             timeline.push({
-                crew: 'System',
-                type: 'Notice',
-                time: '--:--',
-                notes: 'No 5:00 PM shooters assigned. Break cascade skipped.'
-            });
-            return timeline;
-        }
+        // Pure Gallery self-managed break tags
+        pureGallery.forEach(crew => {
+            timeline.push({ crew: crew.name, type: 'Break', time: 'Self-Managed', notes: 'Takes own break, manages gallery floor.' });
+        });
 
-        // 2. Determine DR Team availability (They finish early seating around 19:00, break until 19:30/19:20)
         let drReliefStartTime = isElegantNight ? "19:20" : "19:30";
-        let availableRelievers = [...drTeam];
-        
-        // Add Print Shop Specialist as a reliever ONLY on Elegant Night
-        if (isElegantNight && printShop) {
-            availableRelievers.push(printShop);
-        }
-
-        // 3. The Cascade: Match 5:00 PM shooters to available relievers
-        // Rule: One reliever can cover up to 2 breaks (e.g., 19:30-20:00, then 20:00-20:30)
         let currentShooterIndex = 0;
 
-        availableRelievers.forEach(reliever => {
-            // Reliever's own break
-            timeline.push({
-                crew: reliever.name,
-                type: 'Own Break',
-                time: `19:00 - ${drReliefStartTime}`,
-                notes: `Finished early seating.`
-            });
+        drTeam.forEach(reliever => {
+            // DR+G 4:00 gets an extra break before early seating
+            if (reliever.role === 'dr_gallery_400') {
+                timeline.push({ crew: reliever.name, type: 'Break 1 (Early)', time: 'Before Early Seating', notes: 'First break before DR rush.' });
+            }
+            
+            // Standard post-DR break
+            timeline.push({ crew: reliever.name, type: 'Break (Post-DR)', time: `19:00 - ${drReliefStartTime}`, notes: `Finished DR early seating.` });
+            
+            // PILLAR CHECK: If Debark Night, kill the cascade. They go straight to Gallery.
+            if (isDebarkNight) {
+                timeline.push({ crew: reliever.name, type: 'Shift Change', time: drReliefStartTime, notes: `Proceed directly to Gallery (No portrait relief tonight).` });
+            } else {
+                // Normal Cascade Logic for other days
+                let reliefTimeCursor = drReliefStartTime;
+                let covers = 0;
 
-            // Reliever covers up to 2 shooters
-            let reliefTimeCursor = drReliefStartTime;
-            let covers = 0;
-
-            while (covers < 2 && currentShooterIndex < portrait500.length) {
-                let shooter = portrait500[currentShooterIndex];
-                let breakEnd = addMinutes(reliefTimeCursor, breakDuration);
-                
-                timeline.push({
-                    crew: shooter.name,
-                    type: 'Break',
-                    time: `${reliefTimeCursor} - ${breakEnd}`,
-                    notes: `Covered by ${reliever.name}`
-                });
-
-                reliefTimeCursor = breakEnd;
-                currentShooterIndex++;
-                covers++;
+                while (covers < 2 && currentShooterIndex < portrait500.length) {
+                    let shooter = portrait500[currentShooterIndex];
+                    let breakEnd = addMinutes(reliefTimeCursor, breakDuration);
+                    timeline.push({ crew: shooter.name, type: 'Break', time: `${reliefTimeCursor} - ${breakEnd}`, notes: `Covered by ${reliever.name}` });
+                    reliefTimeCursor = breakEnd;
+                    currentShooterIndex++;
+                    covers++;
+                }
             }
         });
 
-        // 4. Overflow Fallback (Assistant Lab Tech)
-        // If the DR team is small, we might still have 5:00 PM shooters who need a break.
+        // Overflow fallback if DR didn't relieve them (or if it is Debark Night)
         if (currentShooterIndex < portrait500.length) {
             if (assistantLab) {
                 let reliefTimeCursor = drReliefStartTime;
                 while (currentShooterIndex < portrait500.length) {
                     let shooter = portrait500[currentShooterIndex];
                     let breakEnd = addMinutes(reliefTimeCursor, breakDuration);
-                    
-                    timeline.push({
-                        crew: shooter.name,
-                        type: 'Break',
-                        time: `${reliefTimeCursor} - ${breakEnd}`,
-                        notes: `Covered by ${assistantLab.name} (Overflow)`
-                    });
-
+                    timeline.push({ crew: shooter.name, type: 'Break', time: `${reliefTimeCursor} - ${breakEnd}`, notes: `Covered by ${assistantLab.name} (Overflow)` });
                     reliefTimeCursor = breakEnd;
                     currentShooterIndex++;
                 }
             } else {
-                // We have uncovered shooters and no Assistant Lab Tech assigned
                 while (currentShooterIndex < portrait500.length) {
-                    timeline.push({
-                        crew: portrait500[currentShooterIndex].name,
-                        type: 'WARNING: Uncovered Break',
-                        time: 'Requires manual assignment',
-                        notes: 'Not enough DR relievers or Lab Techs assigned.'
-                    });
+                    let warningNote = isDebarkNight ? 'DR does not relieve on Debark Night. Assign Lab Tech.' : 'Not enough DR relievers assigned.';
+                    timeline.push({ crew: portrait500[currentShooterIndex].name, type: 'WARNING: Uncovered Break', time: 'Requires manual assignment', notes: warningNote });
                     currentShooterIndex++;
                 }
             }
         }
 
-        // Sort the timeline chronologically for a clean UI output
         timeline.sort((a, b) => {
-            if (a.time.includes('--') || a.time.includes('WARNING')) return 1;
-            if (b.time.includes('--') || b.time.includes('WARNING')) return -1;
-            let timeA = a.time.split(' - ')[0];
-            let timeB = b.time.split(' - ')[0];
-            return timeA.localeCompare(timeB);
+            if (a.time.includes('--') || a.time.includes('WARNING') || a.time.includes('Self') || a.time.includes('Before')) return 1;
+            if (b.time.includes('--') || b.time.includes('WARNING') || b.time.includes('Self') || b.time.includes('Before')) return -1;
+            return a.time.split(' - ')[0].localeCompare(b.time.split(' - ')[0]);
         });
 
         return timeline;
     }
 
-/* === END OF CHUNK 5: BREAK CASCADE MATH. APPEND CHUNK 6 BELOW === */
     /* === 8. LOGIC ENGINE: COPY SIDE TETRIS (DEBARK NIGHT) === */
-    /**
-     * Solves the Debark Night desk coverage puzzle.
-     * Rules: 
-     * - Requires 480 total minutes of coverage (1pax 17:00-18:00, 2pax 18:00-21:00, 1pax 21:00-22:00).
-     * - ONLY Gallery Photographers are eligible.
-     * - Total minutes are divided absolutely equally among the eligible team.
-     * - Shifts are assigned in blocks (up to 2 splits per person) to allow for their 30-min breaks.
-     * 
-     * @param {Array} rosterAssignments - The active evening roster array
-     * @returns {Object} puzzleSolution - The mathematical breakdown and shift assignments
-     */
     function calculateCopySideTetris(rosterAssignments) {
-        const TOTAL_DESK_MINUTES = 480;
-        
-        // 1. Filter out everyone EXCEPT Gallery roles
-        let galleryTeam = rosterAssignments.filter(crew => 
-            crew.role === 'gallery_400' || crew.role === 'gallery_530'
-        );
+        // STRICT RULE: Only Pure Gallery handles Copy Side. DR+Gallery is exempt.
+        let galleryTeam = rosterAssignments.filter(crew => crew.role === 'gallery_400' || crew.role === 'gallery_530');
 
-        if (galleryTeam.length === 0) {
-            return { error: "No Gallery team assigned. Cannot generate Copy Side matrix." };
-        }
+        if (galleryTeam.length === 0) return { error: "No Pure Gallery staff assigned tonight. (DR+Gallery teams are exempt from Copy Side)." };
 
-        // 2. The Golden Rule: Absolute fairness
-        let fairShareMinutes = Math.round(TOTAL_DESK_MINUTES / galleryTeam.length);
-        let assignments = [];
-
-        // 3. The Split Logic (Blocks of 30, 60, 90)
-        galleryTeam.forEach((crew, index) => {
-            let shifts = [];
-            let remaining = fairShareMinutes;
+        const generateSchedule = (blocks) => {
+            let assignments = galleryTeam.map(crew => ({ crew: crew.name, role: crew.role, shifts: [] }));
+            let pointer = 0;
             
-            // If the fair share is large, split it into two shifts to preserve gallery floor flow
-            if (remaining > 90) {
-                shifts.push({ duration: 60, label: "Shift 1 (Peak Rush)" });
-                shifts.push({ duration: remaining - 60, label: "Shift 2 (Slow Hours)" });
-            } else if (remaining > 60) {
-                shifts.push({ duration: Math.floor(remaining / 2), label: "Shift 1" });
-                shifts.push({ duration: Math.ceil(remaining / 2), label: "Shift 2" });
-            } else {
-                // Done in one solid block
-                shifts.push({ duration: remaining, label: "Continuous Shift" });
-            }
-            
-            assignments.push({
-                crew: crew.name,
-                role: crew.role,
-                totalAssigned: fairShareMinutes,
-                shifts: shifts,
-                notes: `Interlocks with ${crew.role === 'gallery_400' ? 'two 30-min breaks' : 'one 30-min break'}`
+            blocks.forEach(block => {
+                let attempts = 0;
+                // Rule: 5:30 PM staff cannot take 16:00 or 17:00 blocks. Skip them.
+                while (attempts < galleryTeam.length) {
+                    if (galleryTeam[pointer].role === 'gallery_530' && (block.includes("16:00") || block.includes("17:00"))) {
+                        pointer = (pointer + 1) % galleryTeam.length;
+                        attempts++;
+                    } else {
+                        break;
+                    }
+                }
+                
+                if (attempts < galleryTeam.length) {
+                    assignments[pointer].shifts.push(block);
+                    pointer = (pointer + 1) % galleryTeam.length;
+                } else {
+                    // Warning if only 5:30 staff exist but an early block needs filling
+                    assignments[0].shifts.push(`${block} [⚠️ Requires 4PM staff]`);
+                }
             });
-        });
+            return assignments;
+        };
+
+        const blocks4PM = [
+            "16:00 - 17:00 (Desk 1)", "17:00 - 18:00 (Desk 1)",
+            "18:00 - 19:00 (Desk 1)", "18:00 - 19:00 (Desk 2)",
+            "19:00 - 20:00 (Desk 1)", "19:00 - 20:00 (Desk 2)",
+            "20:00 - 21:00 (Desk 1)", "20:00 - 21:00 (Desk 2)", "21:00 - 22:00 (Desk 1)"
+        ];
+
+        const blocks5PM = [
+            "17:00 - 18:00 (Desk 1)",
+            "18:00 - 19:00 (Desk 1)", "18:00 - 19:00 (Desk 2)",
+            "19:00 - 20:00 (Desk 1)", "19:00 - 20:00 (Desk 2)",
+            "20:00 - 21:00 (Desk 1)", "20:00 - 21:00 (Desk 2)", "21:00 - 22:00 (Desk 1)"
+        ];
 
         return {
-            totalRequired: TOTAL_DESK_MINUTES,
-            fairShare: fairShareMinutes,
-            assignments: assignments
+            opt4PM: generateSchedule(blocks4PM),
+            opt5PM: generateSchedule(blocks5PM)
         };
     }
 
@@ -1070,15 +1017,15 @@
     /* === 11. UI CONTROLLER: DAILY SETUP (SPEED GRID) === */
     let dailyAssignments = [];
 
-    // Dictionary linking roles to their CSS classes and short-labels
     const RoleStyles = {
-        'portrait_500': { class: 'role-p500', short: 'P 5:00' },
-        'portrait_530': { class: 'role-p530', short: 'P 5:30' },
-        'dining_room':  { class: 'role-dr',   short: 'DR' },
-        'gallery_400':  { class: 'role-g400', short: 'G 4:00' },
-        'gallery_530':  { class: 'role-g530', short: 'G 5:30' },
-        'assistant_lab':{ class: 'role-al',   short: 'Lab' },
-        'print_shop':   { class: 'role-ps',   short: 'Print' }
+        'portrait_500':   { class: 'role-p500', short: 'P 5:00' },
+        'portrait_530':   { class: 'role-p530', short: 'P 5:30' },
+        'dr_gallery_400': { class: 'role-drg4', short: 'DR+G 4' },
+        'dr_gallery_530': { class: 'role-drg5', short: 'DR+G 5' },
+        'gallery_400':    { class: 'role-g400', short: 'G 4:00' },
+        'gallery_530':    { class: 'role-g530', short: 'G 5:30' },
+        'assistant_lab':  { class: 'role-al',   short: 'Lab' },
+        'print_shop':     { class: 'role-ps',   short: 'Print' }
     };
 
     function renderSpeedGrid(rosterSize = 20) {
@@ -1099,21 +1046,13 @@
                 const existingIndex = dailyAssignments.findIndex(a => a.scheduleNumber === i);
                 
                 if (existingIndex > -1) {
-                    // Undo logic: Remove assignment and wipe styles
                     const oldRole = dailyAssignments[existingIndex].role;
                     btn.classList.remove(RoleStyles[oldRole].class);
-                    btn.innerHTML = `<div>${i}</div>`; // Remove label
+                    btn.innerHTML = `<div>${i}</div>`; 
                     dailyAssignments.splice(existingIndex, 1);
                 } else {
-                    // Assign logic: Apply color and short label
                     const crewMember = AppState.roster.find(c => c.scheduleNumber === i) || { name: `Photographer #${i}` };
-                    
-                    dailyAssignments.push({
-                        scheduleNumber: i,
-                        role: role,
-                        name: crewMember.name
-                    });
-                    
+                    dailyAssignments.push({ scheduleNumber: i, role: role, name: crewMember.name });
                     btn.classList.add(RoleStyles[role].class);
                     btn.innerHTML = `<div>${i}</div><span class="role-label">${RoleStyles[role].short}</span>`;
                 }
@@ -1126,20 +1065,18 @@
 
     // ACTION: Lock Schedule & Generate Matrix
     document.getElementById('btn-lock-schedule').addEventListener('click', () => {
-        if (dailyAssignments.length === 0) return alert('No team members assigned! Tap the numbers to build the roster.');
+        if (dailyAssignments.length === 0) return alert('No team members assigned!');
         
         document.getElementById('setup-number-pad').style.pointerEvents = 'none';
         document.getElementById('select-evening-role').disabled = true;
         document.getElementById('btn-lock-schedule').style.display = 'none';
         document.getElementById('btn-edit-schedule').style.display = 'block';
         
-        // CHECK THE CRUISE DAY PILLAR
         const currentDay = document.getElementById('select-cruise-day').value;
-        const isElegant = (currentDay === 'elegant');
         const isDebarkNight = (currentDay === 'debark');
         
-        // 1. Run the Break Engine
-        const timeline = calculateBreakCascade(dailyAssignments, isElegant);
+        // Pass the precise Current Day into the Engine
+        const timeline = calculateBreakCascade(dailyAssignments, currentDay);
         
         const outputDiv = document.getElementById('break-cascade-list');
         outputDiv.innerHTML = `<div style="font-size:12px; margin-bottom:10px; color:var(--text-muted);">Mode: ${currentDay.toUpperCase()}</div>`;
@@ -1155,38 +1092,38 @@
             outputDiv.appendChild(div);
         });
 
-        // 2. AUTOPILOT: Only run Copy Side Tetris if it's Debark Night
+        // AUTOPILOT: Only calculate Copy Side if it's Final Night
         if (isDebarkNight) {
-             const copyMatrix = calculateCopySideTetris(dailyAssignments); // Feeds it the Gallery guys
-             
+             const copyMatrix = calculateCopySideTetris(dailyAssignments); 
              if (!copyMatrix.error) {
                  const header = document.createElement('div');
-                 header.innerHTML = `<h4 style="margin-top:20px; margin-bottom:8px; color:var(--primary);">Debark Desk Matrix (Fair Share: ${copyMatrix.fairShare} mins)</h4>`;
+                 header.innerHTML = `<h4 style="margin-top:20px; margin-bottom:8px; color:var(--primary);">Debark Copy Side (Pure Gallery Only)</h4>`;
                  outputDiv.appendChild(header);
 
-                 copyMatrix.assignments.forEach(assign => {
-                     const shiftText = assign.shifts.map(s => `${s.duration}m`).join(' + ');
-                     const div = document.createElement('div');
-                     div.className = 'card';
-                     div.style.marginBottom = '8px';
-                     div.style.padding = '12px';
-                     div.innerHTML = `<strong>${assign.crew}</strong> - ${shiftText} <br>
-                                      <span style="font-size:12px; color:var(--text-muted)">${assign.notes}</span>`;
-                     outputDiv.appendChild(div);
+                 // Render Option A (4 PM Start)
+                 outputDiv.innerHTML += `<div style="font-weight:bold; margin-top:10px; margin-bottom:5px; background:var(--primary); color:#FFF; padding:6px; border-radius:4px;">Option A: 4:00 PM Start</div>`;
+                 copyMatrix.opt4PM.forEach(assign => {
+                     const shiftText = assign.shifts.join('<br>• ');
+                     outputDiv.innerHTML += `<div class="card" style="margin-bottom:8px; padding:12px;"><strong>${assign.crew}</strong><br><span style="font-size:13px;">• ${shiftText || 'No assigned shift'}</span></div>`;
                  });
+
+                 // Render Option B (5 PM Start)
+                 outputDiv.innerHTML += `<div style="font-weight:bold; margin-top:15px; margin-bottom:5px; background:var(--text-muted); color:#FFF; padding:6px; border-radius:4px;">Option B: 5:00 PM Start</div>`;
+                 copyMatrix.opt5PM.forEach(assign => {
+                     const shiftText = assign.shifts.join('<br>• ');
+                     outputDiv.innerHTML += `<div class="card" style="margin-bottom:8px; padding:12px;"><strong>${assign.crew}</strong><br><span style="font-size:13px;">• ${shiftText || 'No assigned shift'}</span></div>`;
+                 });
+
              } else {
-                 // Show a warning if it is Debark Night but no Gallery guys are assigned
-                 outputDiv.innerHTML += `<div style="color:var(--danger); margin-top:10px; font-weight:bold;">⚠️ Cannot generate Copy Side schedule: No Gallery staff assigned tonight.</div>`;
+                 outputDiv.innerHTML += `<div class="card" style="color:var(--danger); margin-top:10px; font-weight:bold;">⚠️ ${copyMatrix.error}</div>`;
              }
         }
         
         document.getElementById('schedule-output').style.display = 'block';
-        
         populateFloorRounds(dailyAssignments);
         if (typeof populateEODInputs === 'function') populateEODInputs(dailyAssignments);
     });
 
-    // ACTION: Undo / Edit Schedule
     document.getElementById('btn-edit-schedule').addEventListener('click', () => {
         document.getElementById('setup-number-pad').style.pointerEvents = 'auto';
         document.getElementById('select-evening-role').disabled = false;
@@ -1194,7 +1131,6 @@
         document.getElementById('btn-edit-schedule').style.display = 'none';
         document.getElementById('schedule-output').style.display = 'none';
     });
-
     
     /* === 12. UI CONTROLLER: FLOOR ROUNDS (MID-SHIFT PACING) === */
     /**
