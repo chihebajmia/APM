@@ -909,25 +909,25 @@
                     assignments[pointer].shifts.push(block);
                     pointer = (pointer + 1) % galleryTeam.length;
                 } else {
-                    // Warning if only 5:30 staff exist but an early block needs filling
                     assignments[0].shifts.push(`${block} [⚠️ Requires 4PM staff]`);
                 }
             });
             return assignments;
         };
 
+        // Removed Desk labels to keep the UI clean and grouped
         const blocks4PM = [
-            "16:00 - 17:00 (Desk 1)", "17:00 - 18:00 (Desk 1)",
-            "18:00 - 19:00 (Desk 1)", "18:00 - 19:00 (Desk 2)",
-            "19:00 - 20:00 (Desk 1)", "19:00 - 20:00 (Desk 2)",
-            "20:00 - 21:00 (Desk 1)", "20:00 - 21:00 (Desk 2)", "21:00 - 22:00 (Desk 1)"
+            "16:00-17:00", "17:00-18:00",
+            "18:00-19:00", "18:00-19:00",
+            "19:00-20:00", "19:00-20:00",
+            "20:00-21:00", "20:00-21:00", "21:00-22:00"
         ];
 
         const blocks5PM = [
-            "17:00 - 18:00 (Desk 1)",
-            "18:00 - 19:00 (Desk 1)", "18:00 - 19:00 (Desk 2)",
-            "19:00 - 20:00 (Desk 1)", "19:00 - 20:00 (Desk 2)",
-            "20:00 - 21:00 (Desk 1)", "20:00 - 21:00 (Desk 2)", "21:00 - 22:00 (Desk 1)"
+            "17:00-18:00",
+            "18:00-19:00", "18:00-19:00",
+            "19:00-20:00", "19:00-20:00",
+            "20:00-21:00", "20:00-21:00", "21:00-22:00"
         ];
 
         return {
@@ -935,6 +935,7 @@
             opt5PM: generateSchedule(blocks5PM)
         };
     }
+
 
 
     /* === 9. LOGIC ENGINE: EFFICIENCY & LEADERBOARD === */
@@ -1091,7 +1092,7 @@
 
     renderSpeedGrid(20);
 
-    // ACTION: Lock Schedule & Generate Matrix
+        // ACTION: Lock Schedule & Generate Matrix
     document.getElementById('btn-lock-schedule').addEventListener('click', () => {
         if (dailyAssignments.length === 0) return alert('No team members assigned!');
         
@@ -1103,50 +1104,75 @@
         const currentDay = document.getElementById('select-cruise-day').value;
         const isDebarkNight = (currentDay === 'debark');
         
-        // Pass the precise Current Day into the Engine
         const timeline = calculateBreakCascade(dailyAssignments, currentDay);
+        let copyMatrix = { error: "Not Final Night" };
+        
+        if (isDebarkNight) {
+             copyMatrix = calculateCopySideTetris(dailyAssignments); 
+        }
         
         const outputDiv = document.getElementById('break-cascade-list');
         outputDiv.innerHTML = `<div style="font-size:12px; margin-bottom:10px; color:var(--text-muted);">Mode: ${currentDay.toUpperCase()}</div>`;
         
-        timeline.forEach(item => {
+        if (isDebarkNight && copyMatrix.error && copyMatrix.error !== "Not Final Night") {
+             outputDiv.innerHTML += `<div class="card" style="color:var(--danger); margin-bottom:10px; font-weight:bold;">⚠️ ${copyMatrix.error}</div>`;
+        }
+
+        // Group the output by Schedule Number (Roster View)
+        dailyAssignments.sort((a, b) => a.scheduleNumber - b.scheduleNumber).forEach(assign => {
+            let myEvents = timeline.filter(t => t.crew === assign.name);
+            
+            // Format Breaks onto one line
+            let breakStrings = myEvents.map(e => {
+                let isWarn = e.type.includes('WARNING') ? 'color:var(--danger);' : '';
+                return `<span style="${isWarn}"><strong>${e.type}:</strong> ${e.time}</span>`;
+            }).join(' | ');
+
+            let noteStrings = myEvents.map(e => e.notes).join(' | ');
+
+            // Format Copy Side options next to breaks
+            let copyHtml = '';
+            if (isDebarkNight && !copyMatrix.error && assign.role.includes('gallery') && !assign.role.includes('dr_gallery')) {
+                let optA = copyMatrix.opt4PM.find(c => c.crew === assign.name)?.shifts.join(', ') || 'None';
+                let optB = copyMatrix.opt5PM.find(c => c.crew === assign.name)?.shifts.join(', ') || 'None';
+                
+                copyHtml = `
+                    <div style="margin-top:8px; padding-top:8px; border-top:1px dashed var(--border); font-size:13px;">
+                        <strong>Copy Side Desk:</strong><br>
+                        <span style="color:var(--primary)">If 4PM Start:</span> ${optA}<br>
+                        <span style="color:var(--text-muted)">If 5PM Start:</span> ${optB}
+                    </div>
+                `;
+            }
+
             const div = document.createElement('div');
             div.className = 'card';
             div.style.marginBottom = '8px';
             div.style.padding = '12px';
-            const isWarning = item.type.includes('WARNING') ? 'color: var(--danger); font-weight: bold;' : '';
-            div.innerHTML = `<strong style="${isWarning}">${item.time}</strong> - ${item.crew} <br>
-                             <span style="font-size:12px; color:var(--text-muted)">${item.type}: ${item.notes}</span>`;
+            div.innerHTML = `
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                    <strong>#${assign.scheduleNumber} - ${assign.name}</strong>
+                    <span style="font-size:10px; background:#eee; padding:3px 6px; border-radius:4px;">${RoleStyles[assign.role]?.short || assign.role}</span>
+                </div>
+                <div style="font-size:13px; line-height:1.4;">${breakStrings || '<em>No breaks generated.</em>'}</div>
+                <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">${noteStrings}</div>
+                ${copyHtml}
+            `;
             outputDiv.appendChild(div);
         });
 
-        // AUTOPILOT: Only calculate Copy Side if it's Final Night
-        if (isDebarkNight) {
-             const copyMatrix = calculateCopySideTetris(dailyAssignments); 
-             if (!copyMatrix.error) {
-                 const header = document.createElement('div');
-                 header.innerHTML = `<h4 style="margin-top:20px; margin-bottom:8px; color:var(--primary);">Debark Copy Side (Pure Gallery Only)</h4>`;
-                 outputDiv.appendChild(header);
+        // Add any system warnings (like Uncovered Breaks) that don't match a specific crew member
+        let orphanedEvents = timeline.filter(t => !dailyAssignments.some(a => a.name === t.crew));
+        orphanedEvents.forEach(item => {
+             const div = document.createElement('div');
+             div.className = 'card';
+             div.style.marginBottom = '8px';
+             div.style.padding = '12px';
+             div.innerHTML = `<strong style="color:var(--danger);">${item.crew} - ${item.type}:</strong> ${item.time} <br>
+                              <span style="font-size:12px; color:var(--text-muted)">${item.notes}</span>`;
+             outputDiv.appendChild(div);
+        });
 
-                 // Render Option A (4 PM Start)
-                 outputDiv.innerHTML += `<div style="font-weight:bold; margin-top:10px; margin-bottom:5px; background:var(--primary); color:#FFF; padding:6px; border-radius:4px;">Option A: 4:00 PM Start</div>`;
-                 copyMatrix.opt4PM.forEach(assign => {
-                     const shiftText = assign.shifts.join('<br>• ');
-                     outputDiv.innerHTML += `<div class="card" style="margin-bottom:8px; padding:12px;"><strong>${assign.crew}</strong><br><span style="font-size:13px;">• ${shiftText || 'No assigned shift'}</span></div>`;
-                 });
-
-                 // Render Option B (5 PM Start)
-                 outputDiv.innerHTML += `<div style="font-weight:bold; margin-top:15px; margin-bottom:5px; background:var(--text-muted); color:#FFF; padding:6px; border-radius:4px;">Option B: 5:00 PM Start</div>`;
-                 copyMatrix.opt5PM.forEach(assign => {
-                     const shiftText = assign.shifts.join('<br>• ');
-                     outputDiv.innerHTML += `<div class="card" style="margin-bottom:8px; padding:12px;"><strong>${assign.crew}</strong><br><span style="font-size:13px;">• ${shiftText || 'No assigned shift'}</span></div>`;
-                 });
-
-             } else {
-                 outputDiv.innerHTML += `<div class="card" style="color:var(--danger); margin-top:10px; font-weight:bold;">⚠️ ${copyMatrix.error}</div>`;
-             }
-        }
-        
         document.getElementById('schedule-output').style.display = 'block';
         populateFloorRounds(dailyAssignments);
         if (typeof populateEODInputs === 'function') populateEODInputs(dailyAssignments);
@@ -1159,6 +1185,7 @@
         document.getElementById('btn-edit-schedule').style.display = 'none';
         document.getElementById('schedule-output').style.display = 'none';
     });
+
     
     /* === 12. UI CONTROLLER: FLOOR ROUNDS (MID-SHIFT PACING) === */
     /**
