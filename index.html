@@ -784,33 +784,56 @@
             else if (crew.role === 'assistant_lab') assistantLab = crew;
         });
 
-        // 5:30 PM Shooters get zero breaks.
+        // 1. Continuous Shifts
         portrait530.forEach(crew => {
             timeline.push({ crew: crew.name, type: 'Continuous Shift', time: '17:30 - Close', notes: 'No break required (5:30 PM start).' });
         });
 
-        // Pure Gallery self-managed break tags
-        pureGallery.forEach(crew => {
-            timeline.push({ crew: crew.name, type: 'Break', time: 'Self-Managed', notes: 'Takes own break, manages gallery floor.' });
+        // 2. Calculated Pure Gallery Breaks (Replaces "Self-Managed")
+        let gal400 = pureGallery.filter(c => c.role === 'gallery_400');
+        let gal530 = pureGallery.filter(c => c.role === 'gallery_530');
+
+        let galEarlyCursor = "17:00";
+        gal400.forEach(crew => {
+            let bEnd = addMinutes(galEarlyCursor, breakDuration);
+            let note = isDebarkNight ? 'Interlocks with Copy Side schedule.' : 'Gallery floor rotation.';
+            timeline.push({ crew: crew.name, type: 'Break 1 (Early)', time: `${galEarlyCursor} - ${bEnd}`, notes: note });
+            galEarlyCursor = bEnd;
+            // Reset cursor after 3 people so max 2 are on break at once
+            if (getMinuteDifference("17:00", galEarlyCursor) >= 90) galEarlyCursor = "17:00"; 
         });
 
+        let galLateCursor = "19:30";
+        let combinedLate = [...gal400, ...gal530];
+        combinedLate.forEach(crew => {
+            let bEnd = addMinutes(galLateCursor, breakDuration);
+            let bName = crew.role === 'gallery_400' ? 'Break 2 (Late)' : 'Break';
+            let note = isDebarkNight ? 'Interlocks with Copy Side schedule.' : 'Gallery floor rotation.';
+            timeline.push({ crew: crew.name, type: bName, time: `${galLateCursor} - ${bEnd}`, notes: note });
+            galLateCursor = bEnd;
+            if (getMinuteDifference("19:30", galLateCursor) >= 90) galLateCursor = "19:30"; 
+        });
+
+        // 3. DR Team Breaks & Portrait Cascade
         let drReliefStartTime = isElegantNight ? "19:20" : "19:30";
         let currentShooterIndex = 0;
+        let drEarlyCursor = "17:00";
 
         drTeam.forEach(reliever => {
-            // DR+G 4:00 gets an extra break before early seating
+            // DR 4:00 gets calculated hard times for early break
             if (reliever.role === 'dr_gallery_400') {
-                timeline.push({ crew: reliever.name, type: 'Break 1 (Early)', time: 'Before Early Seating', notes: 'First break before DR rush.' });
+                let bEnd = addMinutes(drEarlyCursor, breakDuration);
+                timeline.push({ crew: reliever.name, type: 'Break 1 (Early)', time: `${drEarlyCursor} - ${bEnd}`, notes: 'First break before DR rush.' });
+                drEarlyCursor = bEnd;
+                if (getMinuteDifference("17:00", drEarlyCursor) >= 60) drEarlyCursor = "17:00";
             }
             
             // Standard post-DR break
             timeline.push({ crew: reliever.name, type: 'Break (Post-DR)', time: `19:00 - ${drReliefStartTime}`, notes: `Finished DR early seating.` });
             
-            // PILLAR CHECK: If Debark Night, kill the cascade. They go straight to Gallery.
             if (isDebarkNight) {
                 timeline.push({ crew: reliever.name, type: 'Shift Change', time: drReliefStartTime, notes: `Proceed directly to Gallery (No portrait relief tonight).` });
             } else {
-                // Normal Cascade Logic for other days
                 let reliefTimeCursor = drReliefStartTime;
                 let covers = 0;
 
@@ -825,8 +848,8 @@
             }
         });
 
-        // Overflow fallback if DR didn't relieve them (or if it is Debark Night)
-        if (currentShooterIndex < portrait500.length) {
+        // 4. Overflow Fallback
+        if (currentShooterIndex < portrait500.length && !isDebarkNight) {
             if (assistantLab) {
                 let reliefTimeCursor = drReliefStartTime;
                 while (currentShooterIndex < portrait500.length) {
@@ -838,21 +861,26 @@
                 }
             } else {
                 while (currentShooterIndex < portrait500.length) {
-                    let warningNote = isDebarkNight ? 'DR does not relieve on Debark Night. Assign Lab Tech.' : 'Not enough DR relievers assigned.';
-                    timeline.push({ crew: portrait500[currentShooterIndex].name, type: 'WARNING: Uncovered Break', time: 'Requires manual assignment', notes: warningNote });
+                    timeline.push({ crew: portrait500[currentShooterIndex].name, type: 'WARNING: Uncovered Break', time: 'Requires manual assignment', notes: 'Not enough DR relievers assigned.' });
                     currentShooterIndex++;
                 }
+            }
+        } else if (currentShooterIndex < portrait500.length && isDebarkNight) {
+             while (currentShooterIndex < portrait500.length) {
+                timeline.push({ crew: portrait500[currentShooterIndex].name, type: 'WARNING: Uncovered Break', time: 'Requires manual assignment', notes: 'DR does not relieve on Debark Night. Assign Lab Tech.' });
+                currentShooterIndex++;
             }
         }
 
         timeline.sort((a, b) => {
-            if (a.time.includes('--') || a.time.includes('WARNING') || a.time.includes('Self') || a.time.includes('Before')) return 1;
-            if (b.time.includes('--') || b.time.includes('WARNING') || b.time.includes('Self') || b.time.includes('Before')) return -1;
+            if (a.time.includes('--') || a.time.includes('WARNING')) return 1;
+            if (b.time.includes('--') || b.time.includes('WARNING')) return -1;
             return a.time.split(' - ')[0].localeCompare(b.time.split(' - ')[0]);
         });
 
         return timeline;
     }
+
 
     /* === 8. LOGIC ENGINE: COPY SIDE TETRIS (DEBARK NIGHT) === */
     function calculateCopySideTetris(rosterAssignments) {
