@@ -883,11 +883,34 @@
 
 
     /* === 8. LOGIC ENGINE: COPY SIDE TETRIS (DEBARK NIGHT) === */
-    function calculateCopySideTetris(rosterAssignments) {
-        // STRICT RULE: Only Pure Gallery handles Copy Side. DR+Gallery is exempt.
+    function calculateCopySideTetris(rosterAssignments, timeline) {
         let galleryTeam = rosterAssignments.filter(crew => crew.role === 'gallery_400' || crew.role === 'gallery_530');
 
         if (galleryTeam.length === 0) return { error: "No Pure Gallery staff assigned tonight. (DR+Gallery teams are exempt from Copy Side)." };
+
+        const parseTime = (tStr) => {
+            let [h, m] = tStr.trim().split(':').map(Number);
+            return h * 60 + m;
+        };
+
+        const checkOverlap = (crewName, blockTimeStr) => {
+            let crewBreaks = timeline.filter(t => t.crew === crewName && t.time.includes('-'));
+            let [bStartStr, bEndStr] = blockTimeStr.split('-');
+            let blockStart = parseTime(bStartStr);
+            let blockEnd = parseTime(bEndStr);
+
+            for (let b of crewBreaks) {
+                let [tS, tE] = b.time.split('-');
+                if (!tS || !tE) continue;
+                let breakStart = parseTime(tS);
+                let breakEnd = parseTime(tE);
+
+                if (blockStart < breakEnd && blockEnd > breakStart) {
+                    return true;
+                }
+            }
+            return false;
+        };
 
         const generateSchedule = (blocks) => {
             let assignments = galleryTeam.map(crew => ({ crew: crew.name, role: crew.role, shifts: [] }));
@@ -895,27 +918,31 @@
             
             blocks.forEach(block => {
                 let attempts = 0;
-                // Rule: 5:30 PM staff cannot take 16:00 or 17:00 blocks. Skip them.
+                let assigned = false;
+
                 while (attempts < galleryTeam.length) {
-                    if (galleryTeam[pointer].role === 'gallery_530' && (block.includes("16:00") || block.includes("17:00"))) {
+                    let currentCrew = galleryTeam[pointer];
+                    let overlapsBreak = checkOverlap(currentCrew.name, block);
+                    let is530Rule = currentCrew.role === 'gallery_530' && (block.includes("16:00") || block.includes("17:00"));
+
+                    if (overlapsBreak || is530Rule) {
                         pointer = (pointer + 1) % galleryTeam.length;
                         attempts++;
                     } else {
+                        assignments[pointer].shifts.push(block);
+                        pointer = (pointer + 1) % galleryTeam.length;
+                        assigned = true;
                         break;
                     }
                 }
                 
-                if (attempts < galleryTeam.length) {
-                    assignments[pointer].shifts.push(block);
-                    pointer = (pointer + 1) % galleryTeam.length;
-                } else {
-                    assignments[0].shifts.push(`${block} [⚠️ Requires 4PM staff]`);
+                if (!assigned) {
+                    assignments[0].shifts.push(`${block} [⚠️ Conflict]`);
                 }
             });
             return assignments;
         };
 
-        // Removed Desk labels to keep the UI clean and grouped
         const blocks4PM = [
             "16:00-17:00", "17:00-18:00",
             "18:00-19:00", "18:00-19:00",
@@ -935,7 +962,6 @@
             opt5PM: generateSchedule(blocks5PM)
         };
     }
-
 
 
     /* === 9. LOGIC ENGINE: EFFICIENCY & LEADERBOARD === */
@@ -1092,7 +1118,7 @@
 
     renderSpeedGrid(20);
 
-        // ACTION: Lock Schedule & Generate Matrix
+         // ACTION: Lock Schedule & Generate Matrix
     document.getElementById('btn-lock-schedule').addEventListener('click', () => {
         if (dailyAssignments.length === 0) return alert('No team members assigned!');
         
@@ -1108,7 +1134,7 @@
         let copyMatrix = { error: "Not Final Night" };
         
         if (isDebarkNight) {
-             copyMatrix = calculateCopySideTetris(dailyAssignments); 
+             copyMatrix = calculateCopySideTetris(dailyAssignments, timeline); 
         }
         
         const outputDiv = document.getElementById('break-cascade-list');
